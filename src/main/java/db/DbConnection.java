@@ -18,7 +18,7 @@ public class DbConnection {
 
     private static final Logger LOGGER = Logger.getLogger(DbConnection.class);
 
-    private Config config;
+    private final Config config;
     private Connection connection;
 
     public DbConnection(@NotNull String pathToConfig) {
@@ -30,6 +30,7 @@ public class DbConnection {
         createParentTable();
     }
 
+    @NotNull
     public Connection getConnection() {
         return connection;
     }
@@ -59,7 +60,7 @@ public class DbConnection {
         StringBuilder sql = new StringBuilder()
                 .append("SELECT * FROM ULR WHERE ")
                 .append( " URL = ").append(url)
-                .append( pathToSource == null ? "" :"path_to_source = " + pathToSource);
+                .append( pathToSource == null ? "" :"and path_to_source = " + pathToSource);
         LOGGER.debug(sql.toString());
         try {
 
@@ -116,13 +117,14 @@ public class DbConnection {
 
     }
 
-    private void runExecuteSqlCreateQeury(String sql) throws SQLException {
+    private void runExecuteSqlCreateQeury(@NotNull String sql) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.execute(sql);
         }
     }
 
-    private ResultSet runExecuteSqlSelectQeury(String sql) throws SQLException {
+    @Nullable
+    private ResultSet runExecuteSqlSelectQeury(@NotNull String sql) throws SQLException {
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             return stmt.executeQuery();
         }

@@ -1,6 +1,8 @@
 package db.readConfig;
 
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -19,7 +21,7 @@ public class Config {
     private String password;
     private String connection;
 
-    public Config(final String pathToConfig) {
+    public Config(@NotNull final String pathToConfig) {
         FileInputStream config;
         try {
             config = new FileInputStream(pathToConfig);
@@ -43,18 +45,22 @@ public class Config {
         LOGGER.debug(" load config: " + this);
     }
 
+    @Nullable
     public String getDriver() {
         return driver;
     }
 
+    @Nullable
     public String getUser() {
         return user;
     }
 
+    @Nullable
     public String getPassword() {
         return password;
     }
 
+    @Nullable
     public String getConnection() {
         return connection;
     }
