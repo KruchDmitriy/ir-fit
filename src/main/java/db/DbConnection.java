@@ -4,13 +4,11 @@ import db.readConfig.Config;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 /**
  * Created by kate on 12.10.17.
@@ -30,6 +28,10 @@ public class DbConnection {
         }
         createURLTable();
         createParentTable();
+    }
+
+    public Connection getConnection() {
+        return connection;
     }
 
     private boolean createConnection() {
@@ -52,18 +54,41 @@ public class DbConnection {
         return true;
     }
 
+    @Nullable
+    public ResultSet selectFromUrlByUrl(@NotNull String url, @Nullable String pathToSource) {
+        StringBuilder sql = new StringBuilder()
+                .append("SELECT * FROM ULR WHERE ")
+                .append( " URL = ").append(url)
+                .append( pathToSource == null ? "" :"path_to_source = " + pathToSource);
+        LOGGER.debug(sql.toString());
+        try {
+
+            final ResultSet res = runExecuteSqlSelectQeury(sql.toString());
+            return res;
+        } catch (SQLException ex) {
+            LOGGER.warn(ex.getMessage());
+            return null;
+        }
+    }
+
+    public boolean insertToUrlRow(@NotNull String url, @NotNull String parent,
+                                  @NotNull String pathToSource) {
+        return false;
+    }
+
+
     private boolean createURLTable() {
 
         StringBuilder sql = new StringBuilder("CREATE TABLE URL (")
                 .append(" id serial PRIMARY KEY,\n")
                 .append(" url VARCHAR (10000) UNIQUE NOT NULL,\n")
                 .append(" created_on TIMESTAMP  DEFAULT NOW(),\n")
-                .append(" last_update TIMESTAMP  NULL,\n")
+                .append(" last_update TIMESTAMP   DEFAULT NOW(),\n")
                 .append(" path_to_source VARCHAR (10000) UNIQUE NOT NULL,\n")
                 .append(" last_login TIMESTAMP")
                 .append(");");
         try {
-            runExecuteSqlQeury(sql.toString());
+            runExecuteSqlCreateQeury(sql.toString());
             LOGGER.debug("SECCES : create UTL table");
             return true;
 
@@ -81,7 +106,7 @@ public class DbConnection {
                 .append(" parrent_id integer REFERENCES url(id) \n")
                 .append(");");
          try {
-             runExecuteSqlQeury(sql.toString());
+             runExecuteSqlCreateQeury(sql.toString());
              LOGGER.debug("SUCCES : create parent_url table");
              return true;
          } catch (SQLException ex) {
@@ -91,9 +116,16 @@ public class DbConnection {
 
     }
 
-    private void runExecuteSqlQeury(String sql) throws SQLException {
-        Statement statement = connection.createStatement();
-        statement.execute(sql);
+    private void runExecuteSqlCreateQeury(String sql) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.execute(sql);
+        }
+    }
+
+    private ResultSet runExecuteSqlSelectQeury(String sql) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            return stmt.executeQuery();
+        }
     }
 
     public static void main(String[] args) {
