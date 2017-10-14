@@ -9,9 +9,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
 
-/**
- * Created by kate on 12.10.17.
- */
 public class Config {
 
     private static final Logger LOGGER = Logger.getLogger(Config.class);
