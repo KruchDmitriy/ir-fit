@@ -89,6 +89,7 @@ public class DbConnection {
             writer.write( source);
         } catch (IOException ex)  {
             LOGGER.warn(ex.getMessage());
+            return false;
         }
 
         try (PreparedStatement statement = connection.prepareStatement(sqlInsertToURL)) {
@@ -132,7 +133,6 @@ public class DbConnection {
             return false;
         }
     }
-
 
     private boolean createURLTable() {
 
