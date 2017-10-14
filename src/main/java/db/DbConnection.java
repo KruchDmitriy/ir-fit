@@ -11,10 +11,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 
-/**
- * Created by kate on 12.10.17.
- */
-
 public class DbConnection {
 
     private static final Logger LOGGER = Logger.getLogger(DbConnection.class);
@@ -147,7 +143,7 @@ public class DbConnection {
                 .append(");");
         try {
             runExecuteSqlCreateQeury(sql.toString());
-            LOGGER.debug("SECCES : create UTL table");
+            LOGGER.debug("SECCES : create url table");
             return true;
 
         } catch (SQLException ex) {
