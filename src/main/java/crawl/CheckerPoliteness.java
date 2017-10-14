@@ -28,7 +28,7 @@ class CheckerPoliteness {
     }
 
     int getDelay(Page page) {
-        final String host = page.getUrl().getHost();
+        final String host = page.getHost();
         if (hostsDelay.containsKey(host)) {
             return hostsDelay.get(host);
         }
@@ -62,12 +62,12 @@ class CheckerPoliteness {
     }
 
     boolean hasAccess(Page page) {
-        String host = page.getUrl().getHost();
+        String host = page.getHost();
         final RobotsTxt robotsTxt;
         if (hostToRobots.containsKey(host)) {
             robotsTxt = hostToRobots.get(host);
         } else {
-            robotsTxt = getRobotsTxt(page.getUrl().getHost());
+            robotsTxt = getRobotsTxt(host);
             hostToRobots.put(host, robotsTxt);
         }
 

@@ -4,6 +4,7 @@ import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -28,8 +29,8 @@ public class UrlTimedQueue implements UrlContainer {
         startUrls.forEach(url -> {
             try {
                 seenUrls.add(url.toURI());
-                putPage(LocalDateTime.now(), new Page(url.toURI(), basePage));
-            } catch (URISyntaxException e) {
+                putPage(LocalDateTime.now(), new Page(url, basePage.toURL()));
+            } catch (URISyntaxException | MalformedURLException  e) {
                 LOGGER.error(e.getMessage());
                 throw new RuntimeException(e);
             }
@@ -46,7 +47,7 @@ public class UrlTimedQueue implements UrlContainer {
 
     @Override
     public synchronized void addUrl(Page page) {
-        if (seenUrls.contains(page.getUrl())) {
+        if (seenUrls.contains(page.getUri())) {
             return;
         }
 
@@ -55,7 +56,7 @@ public class UrlTimedQueue implements UrlContainer {
         }
 
         int delay = checkerPoliteness.getDelay(page);
-        LocalDateTime downloadDate = getDateAfterMillis(page.getUploadDate(), delay);
+        LocalDateTime downloadDate = getDateAfterMillis(page.getCreateDate(), delay);
         putPage(downloadDate, page);
     }
 

@@ -6,34 +6,41 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class Page {
-    private final URI url;
-    private final URI parentUrl;
-    private LocalDateTime uploadDate;
+    private final URL url;
+    private final URL parentUrl;
+    private LocalDateTime createDate;
     private Element body;
     private static final Logger LOGGER = Logger.getLogger(Page.class);
 
-    Page(URI url, URI baseUrl) {
+    Page(URL url, URL baseUrl) {
         this.url = url;
         this.parentUrl = baseUrl;
+        createDate = LocalDateTime.now();
     }
 
-    public URI getUrl() {
+    public URL getUrl() {
         return url;
     }
 
-    public URI getParentUrl() {
+    public String getHost() {
+        return url.getProtocol() + "://" + url.getHost();
+    }
+
+    public URL getParentUrl() {
         return parentUrl;
     }
 
-    public LocalDateTime getUploadDate() {
-        return uploadDate;
+    public LocalDateTime getCreateDate() {
+        return createDate;
     }
 
     public String getBody() {
@@ -55,14 +62,19 @@ public class Page {
         return body.getElementsByTag("a")
                 .stream()
                 .map(tag -> tag.attr("href"))
-                .filter(Page::checkExtension)
+//                .filter(Page::checkExtension)
                 .map(link -> {
                     try {
-                        return new Page(new URI(link), url);
-                    } catch (URISyntaxException e) {
+                        URL uri = new URL(url.toString() + link);
+                        if (link.startsWith("http")) {
+                            uri = new URL(link);
+                        }
+                        return new Page(uri, url);
+                    } catch (MalformedURLException e) {
                         throw new RuntimeException(e);
                     }
                 })
+                .peek(System.out::println)
                 .collect(Collectors.toList());
     }
 
@@ -74,7 +86,7 @@ public class Page {
         Document document;
         try {
             Connection.Response response = Crawler.getConnection(url.toString()).execute();
-            uploadDate = LocalDateTime.now();
+            createDate = LocalDateTime.now();
             document = response.parse();
         } catch (IOException e) {
             LOGGER.error("Error while downloading page " + url.toString(), e);
@@ -101,5 +113,13 @@ public class Page {
         }
 
         return body.toString().hashCode();
+    }
+
+    public URI getUri() {
+        try {
+            return url.toURI();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

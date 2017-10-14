@@ -16,10 +16,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Crawler {
+    static final String BOT_NAME = "irfit-bot";
     private static final Logger LOGGER = Logger.getLogger(Crawler.class);
-
     private static final String PATH_TO_RESOURCES = "src/main/resources/";
-    private static final String BOT_NAME = "irfit-bot";
     private static final Path PATH_TO_DATA_SOURCE =
             Paths.get(PATH_TO_RESOURCES + "start_pages.txt");
     private static final int DEFAULT_NUM_WORKERS = 16;
@@ -30,7 +29,6 @@ public class Crawler {
     private final Thread[] workers;
     private final UrlContainer urlContainer;
     private final DbConnection dbConnection = new DbConnection();
-    private boolean isStopped;
 
     public Crawler() {
         this(DEFAULT_NUM_WORKERS);
@@ -73,7 +71,6 @@ public class Crawler {
         for (Thread worker : workers) {
             worker.interrupt();
         }
-        isStopped = true;
     }
 
     private void dump(@NotNull String fileQueue, @NotNull String fileExistsUrls) {
@@ -103,6 +100,7 @@ public class Crawler {
                 LOGGER.info(currentPage);
                 for (Page page : currentPage.expandPage()) {
                     urlContainer.addUrl(page);
+                    LOGGER.info(page);
                 }
 
                 dbConnection.insertToUrlRow(currentPage);

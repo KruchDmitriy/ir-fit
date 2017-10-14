@@ -84,8 +84,11 @@ public class DbConnection {
         String sqlInsertParent = "insert into parent_url (url_id, parent_id) " +
                 "values (?, ?); ";
 
+        final String pathToFile = PATH + page.getUrl().toString()
+                .replaceAll("/", "_");
+
         try (Writer writer = new BufferedWriter(new OutputStreamWriter(
-                new FileOutputStream(PATH + page.getUrl())))) {
+                new FileOutputStream(pathToFile)))) {
             writer.write(page.getBody());
         } catch (IOException ex) {
             LOGGER.warn(ex.getMessage());
@@ -94,9 +97,9 @@ public class DbConnection {
 
         try (PreparedStatement statement = connection.prepareStatement(sqlInsertToURL)) {
             statement.setString(1, page.getUrl().toString());
-            statement.setString(2, PATH + page.getUrl());
+            statement.setString(2, pathToFile);
             statement.setInt(3, page.hashCode());
-            statement.setString(4, page.getUploadDate().toString());
+            statement.setString(4, page.getCreateDate().toString());
 
             final int rows = statement.executeUpdate();
             if (rows > 0) {
