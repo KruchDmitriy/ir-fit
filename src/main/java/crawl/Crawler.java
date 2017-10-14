@@ -1,5 +1,6 @@
 package crawl;
 
+import db.DbConnection;
 import org.apache.log4j.Logger;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -21,6 +22,7 @@ public class Crawler {
     private static final Logger LOGGER = Logger.getLogger(Crawler.class);
     private final Thread[] workers;
     private final UrlContainer urlContainer;
+    private final DbConnection dbConnection = new DbConnection();
 
     public Crawler() {
         this(DEFAULT_NUM_WORKERS);
@@ -72,6 +74,8 @@ public class Crawler {
                 for (Page page: currentPage.expandPage()) {
                     urlContainer.addUrl(page);
                 }
+
+                dbConnection.insertToUrlRow(currentPage);
             }
         }
     }
