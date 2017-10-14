@@ -6,6 +6,7 @@ import org.apache.log4j.PropertyConfigurator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
@@ -17,6 +18,7 @@ import java.sql.*;
 public class DbConnection {
 
     private static final Logger LOGGER = Logger.getLogger(DbConnection.class);
+    private static final String PATH = "src/main/resources/documents/";
 
     private final Config config;
     private Connection connection;
@@ -40,6 +42,7 @@ public class DbConnection {
             if (config.getDriver() != null) {
                 Class.forName(config.getDriver());
                 connection = DriverManager.getConnection(config.getConnection(), config.getUser(), config.getPassword());
+                connection.setAutoCommit(false); //only transaction
             } else {
                 return false;
             }
@@ -59,8 +62,8 @@ public class DbConnection {
     public ResultSet selectFromUrlByUrl(@NotNull String url, @Nullable String pathToSource) {
         StringBuilder sql = new StringBuilder()
                 .append("SELECT * FROM ULR WHERE ")
-                .append( " URL = ").append(url)
-                .append( pathToSource == null ? "" :"and path_to_source = " + pathToSource);
+                .append(" URL = ").append(url)
+                .append(pathToSource == null ? "" : "and path_to_source = " + pathToSource);
         LOGGER.debug(sql.toString());
         try {
 
@@ -72,11 +75,64 @@ public class DbConnection {
         }
     }
 
-    public boolean insertToUrlRow(@NotNull String url, @NotNull String parent,
-                                  @NotNull String pathToSource) {
-        return false;
-    }
+    public boolean insertToUrlRow(@NotNull String url, @NotNull String parentUrl,
+                                  @NotNull String source, @Nullable String timeDownloading) {
 
+        String sqlInsertToURL = " insert into URL " +
+                "(url, source, source_hash, time_downloading) " +
+                "values (?, ?, ?, ? ); ";
+
+        String sqlInsertParent = "insert into parrent_url (url_id, parrent_id) values (?, ?); ";
+
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(PATH + url)))) {
+            writer.write( source);
+        } catch (IOException ex)  {
+            LOGGER.warn(ex.getMessage());
+            return false;
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(sqlInsertToURL)) {
+            statement.setString(1, url);
+            statement.setString(2, PATH + url);
+            statement.setInt(3, source.hashCode());
+            statement.setString(4, timeDownloading);
+
+            final int rows = statement.executeUpdate();
+            if (rows > 0) {
+                final int urlId = statement.getGeneratedKeys().getInt(1);
+                final ResultSet resultSet = selectFromUrlByUrl(parentUrl, null);
+                if (resultSet == null) {
+                    LOGGER.fatal(String.format("Parent URL {%s} is not found", parentUrl));
+                    return false;
+                }
+                final int parentId = resultSet.getInt(1);
+
+                try (PreparedStatement statement1 = connection.prepareStatement(sqlInsertParent)) {
+                    statement1.setInt(1, urlId );
+                    statement1.setInt(2, parentId);
+                    statement1.executeUpdate();
+                } catch (SQLException ex) {
+                    LOGGER.debug(ex.getMessage());
+                    LOGGER.fatal("FAIL sql = " + sqlInsertParent);
+                    connection.rollback();
+                    return false;
+                }
+
+            } else {
+                connection.rollback();
+                return  false;
+            }
+
+            connection.commit();
+            return  true;
+
+        } catch (SQLException ex) {
+            LOGGER.debug(ex.getMessage());
+            LOGGER.fatal("FAIL sql = " + sqlInsertToURL);
+            return false;
+        }
+    }
 
     private boolean createURLTable() {
 
@@ -85,8 +141,9 @@ public class DbConnection {
                 .append(" url VARCHAR (10000) UNIQUE NOT NULL,\n")
                 .append(" created_on TIMESTAMP  DEFAULT NOW(),\n")
                 .append(" last_update TIMESTAMP   DEFAULT NOW(),\n")
-                .append(" path_to_source VARCHAR (10000) UNIQUE NOT NULL,\n")
-                .append(" last_login TIMESTAMP")
+                .append(" source VARCHAR (10000) UNIQUE NOT NULL,\n")
+                .append(" source_hash Integer NOT NULL, \n ")
+                .append(" time_downloading TIMESTAMP NULL")
                 .append(");");
         try {
             runExecuteSqlCreateQeury(sql.toString());
@@ -101,25 +158,26 @@ public class DbConnection {
 
     private boolean createParentTable() {
         StringBuilder sql = new StringBuilder()
-                .append("create table parrent_url (")
+                .append(" create table parrent_url (")
                 .append(" id serial PRIMARY KEY, \n ")
                 .append(" url_id integer REFERENCES url (id), \n")
                 .append(" parrent_id integer REFERENCES url(id) \n")
                 .append(");");
-         try {
-             runExecuteSqlCreateQeury(sql.toString());
-             LOGGER.debug("SUCCES : create parent_url table");
-             return true;
-         } catch (SQLException ex) {
-             LOGGER.warn(ex.getMessage());
-         }
-         return false;
+        try {
+            runExecuteSqlCreateQeury(sql.toString());
+            LOGGER.debug("SUCCES : create parent_url table");
+            return true;
+        } catch (SQLException ex) {
+            LOGGER.warn(ex.getMessage());
+        }
+        return false;
 
     }
 
     private void runExecuteSqlCreateQeury(@NotNull String sql) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.execute(sql);
+            statement.executeUpdate();
+            connection.commit();
         }
     }
 
@@ -131,10 +189,10 @@ public class DbConnection {
     }
 
     public static void main(String[] args) {
-        String log4jConfPath = "src/main/resource/log4j.properties";
+        String log4jConfPath = "src/main/resources/log4j.properties";
         PropertyConfigurator.configure(log4jConfPath);
 
-        String pathToConfig = "src/main/resource/db.cfg";
+        String pathToConfig = "src/main/resources/db.cfg";
         Path currentRelativePath = Paths.get(pathToConfig);
         String s = currentRelativePath.toAbsolutePath().toString();
         DbConnection connection = new DbConnection(s);
