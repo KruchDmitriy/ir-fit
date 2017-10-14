@@ -62,17 +62,14 @@ public class DbConnection {
     }
 
     @Nullable
-    public ResultSet selectFromUrlByUrl(@NotNull String url, @Nullable String pathToSource) {
-        StringBuilder sql = new StringBuilder()
-                .append("SELECT * FROM url_dt WHERE ")
-                .append(" URL like ").append("'" + url + "'")
-                .append(pathToSource == null ? "" : "and path_to_source = " + pathToSource);
+    public int selectFromUrlByUrl(@NotNull String url) {
+        String sql = " { ? = call selectByUrl ( ? ) } ";
         LOGGER.debug(sql.toString());
         try {
-            return runExecuteSqlSelectQeury(sql.toString());
+            return runExecuteSqlSelectQeury(sql.toString(), url);
         } catch (SQLException ex) {
             LOGGER.warn(ex.getMessage());
-            return null;
+            return -1;
         }
     }
 
@@ -96,8 +93,11 @@ public class DbConnection {
             return false;
         }
 
-        try (PreparedStatement statement = connection.prepareStatement(sqlInsertToURL,
-                Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement statement =
+                     connection.prepareStatement(sqlInsertToURL,
+                Statement.RETURN_GENERATED_KEYS);
+             PreparedStatement statement1 =
+                connection.prepareStatement(sqlInsertParent)) {
             statement.setString(1, page.getUrl().toString());
             statement.setString(2, pathToFile);
             statement.setInt(3, page.hashCode());
@@ -108,30 +108,15 @@ public class DbConnection {
                 ResultSet resultSet = statement.getGeneratedKeys();
                 if (resultSet == null || !resultSet.next()) {
                     throw new SQLException("result set is null");
-
                 }
                 final int urlId = resultSet.getInt(1);
-//                int rowsParent =
-                resultSet = selectFromUrlByUrl(page.getParentUrl().toString(),
-                        null);
-//                if (rowsParent > 0 ) {
-//                        resultSet = statement.getGeneratedKeys();
-                if (resultSet == null || !resultSet.next()) {
-                    throw new SQLException("result set is null");
+                int parentId = selectFromUrlByUrl(page.getParentUrl().toString());
+                if (parentId < 0) {
+                    throw new SQLException();
                 }
-                final int parentId = resultSet.getInt(1);
-
-                try (PreparedStatement statement1 =
-                             connection.prepareStatement(sqlInsertParent)) {
-                    statement1.setInt(1, urlId);
-                    statement1.setInt(2, parentId);
-                    statement1.executeUpdate();
-                } catch (SQLException ex) {
-                    throw new SQLException(ex);
-                }
-//                } else  {
-//                    throw new SQLException("0 rows update");
-//                }
+                statement1.setInt(1, urlId);
+                statement1.setInt(2, parentId);
+                statement1.executeUpdate();
 
             } else {
                 throw new SQLException("0 rows update");
@@ -147,7 +132,6 @@ public class DbConnection {
                 LOGGER.info("rollback fail");
             }
             LOGGER.debug(ex.getMessage());
-            LOGGER.fatal("FAIL sql = " + sqlInsertToURL);
             return false;
         }
     }
@@ -209,12 +193,12 @@ public class DbConnection {
     }
 
     @Nullable
-    private ResultSet runExecuteSqlSelectQeury(@NotNull String sql) throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-//            if (statement.execute(sql)) {
-//                return null;
-//            }
-            return statement.executeQuery(sql);
-        }
+    private int
+    runExecuteSqlSelectQeury(@NotNull String sql, @NotNull String url) throws SQLException {
+        CallableStatement statement = connection.prepareCall(sql);
+        statement.registerOutParameter(1, Types.INTEGER);
+        statement.setString(2, "'" + url + "'");
+        statement.execute();
+        return statement.getInt(1);
     }
 }
