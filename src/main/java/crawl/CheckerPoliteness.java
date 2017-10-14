@@ -28,7 +28,7 @@ class CheckerPoliteness {
         });
     }
 
-    int getDelay(UrlContainer.Page page) {
+    int getDelay(Page page) {
         final String host = page.getUrl().getHost();
         if (hostsDelay.containsKey(host)) {
             return hostsDelay.get(host);
@@ -62,7 +62,7 @@ class CheckerPoliteness {
         return DEFAULT_DELAY;
     }
 
-    boolean hasAccess(UrlContainer.Page page) {
+    boolean hasAccess(Page page) {
         String host = page.getUrl().getHost();
         final RobotsTxt robotsTxt;
         if (hostToRobots.containsKey(host)) {
@@ -73,7 +73,7 @@ class CheckerPoliteness {
         }
 
         return robotsTxt == null ||
-                robotsTxt.query(Crawler.NAME, page.toString());
+                robotsTxt.query(Crawler.BOT_NAME, page.toString());
     }
 
 

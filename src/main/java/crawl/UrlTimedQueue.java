@@ -14,14 +14,14 @@ public class UrlTimedQueue implements UrlContainer {
     }
 
     @Override
-    public Page getUrl() {
+    public synchronized Page getUrl() {
         Page page = urls.firstEntry().getValue();
         urls.remove(urls.firstKey());
         return page;
     }
 
     @Override
-    public void addUrl(Page page) {
+    public synchronized void addUrl(Page page) {
         if (seenUrls.contains(page.getUrl())) {
             return;
         }
