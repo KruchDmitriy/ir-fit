@@ -6,6 +6,7 @@ import org.apache.log4j.PropertyConfigurator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
@@ -17,6 +18,7 @@ import java.sql.*;
 public class DbConnection {
 
     private static final Logger LOGGER = Logger.getLogger(DbConnection.class);
+    private static final String PATH = "src/main/resources/documents/";
 
     private final Config config;
     private Connection connection;
@@ -82,9 +84,16 @@ public class DbConnection {
 
         String sqlInsertParent = "insert into parrent_url (url_id, parrent_id) values (?, ?); ";
 
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(PATH + url)))) {
+            writer.write( source);
+        } catch (IOException ex)  {
+            LOGGER.warn(ex.getMessage());
+        }
+
         try (PreparedStatement statement = connection.prepareStatement(sqlInsertToURL)) {
             statement.setString(1, url);
-            statement.setString(2, source);
+            statement.setString(2, PATH + url);
             statement.setInt(3, source.hashCode());
             statement.setString(4, timeDownloading);
 
@@ -149,7 +158,7 @@ public class DbConnection {
 
     private boolean createParentTable() {
         StringBuilder sql = new StringBuilder()
-                .append("create table parrent_url (")
+                .append(" create table parrent_url (")
                 .append(" id serial PRIMARY KEY, \n ")
                 .append(" url_id integer REFERENCES url (id), \n")
                 .append(" parrent_id integer REFERENCES url(id) \n")
