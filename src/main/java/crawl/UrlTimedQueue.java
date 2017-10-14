@@ -1,9 +1,16 @@
 package crawl;
 
+import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.*;
 import java.net.URI;
 import java.util.*;
 
 public class UrlTimedQueue implements UrlContainer {
+
+    private static final Logger LOGGER = Logger.getLogger(UrlTimedQueue.class);
+
     private final TreeMap<Date, Page> urls = new TreeMap<>();
     private final HashSet<URI> seenUrls = new LinkedHashSet<>();
     private final CheckerPoliteness checkerPoliteness;
@@ -40,5 +47,33 @@ public class UrlTimedQueue implements UrlContainer {
         calendar.setTime(current);
         calendar.add(Calendar.MILLISECOND, milliseconds);
         return calendar.getTime();
+    }
+
+    @Override
+    public void dump(@NotNull String fileQueue, @NotNull String fileExistsUrl) {
+        try (Writer writerQueue =
+                     new BufferedWriter(new OutputStreamWriter(
+                             new FileOutputStream(fileQueue))) ;
+             Writer existsUrl =        new BufferedWriter(new OutputStreamWriter(
+                     new FileOutputStream(fileExistsUrl)))  ) {
+            urls.forEach((date, page) -> {
+                try {
+                    writerQueue.write(page.toString() + "\n");
+                } catch (IOException e) {
+                    LOGGER.warn(e.getMessage());
+                }
+            });
+
+            seenUrls.forEach(uri -> {
+                try {
+                    existsUrl.write(uri + "\n");
+                } catch (IOException e) {
+                    LOGGER.warn(e.getMessage());
+                }
+            });
+
+        } catch (IOException ex) {
+            LOGGER.warn(ex.getMessage());
+        }
     }
 }
