@@ -7,7 +7,6 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -20,9 +19,9 @@ class CheckerPoliteness {
     private final HashMap<String, Integer> hostsDelay = new HashMap<>();
     private static final int DEFAULT_DELAY = 500;
 
-    CheckerPoliteness(List<URI> startUrls) {
+    CheckerPoliteness(List<URL> startUrls) {
         startUrls.forEach(url -> {
-            String host = url.getHost();
+            String host = url.getProtocol() + "://" + url.getHost();
             hostsDelay.put(host, getDelay(host));
             hostToRobots.put(host, getRobotsTxt(host));
         });

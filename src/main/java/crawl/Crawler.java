@@ -6,8 +6,10 @@ import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,14 +32,14 @@ public class Crawler {
 
     public Crawler(int numWorkers) {
         workers = new Thread[numWorkers];
-        List<URI> startUrls;
+        List<URL> startUrls;
         try {
              startUrls = Files.lines(PATH_TO_DATA_SOURCE)
                     .map(line -> {
                         try {
-                            return new URI(line);
-                        } catch (URISyntaxException e) {
-                            LOGGER.error(e.getMessage(), e);
+                            return new URL(line);
+                        } catch (MalformedURLException e) {
+                            LOGGER.error(e.getMessage());
                             throw new RuntimeException(e);
                         }
                     }).collect(Collectors.toList());
@@ -71,6 +73,9 @@ public class Crawler {
         public void run() {
             while (!Thread.currentThread().isInterrupted()) {
                 Page currentPage = urlContainer.getUrl();
+
+                LOGGER.info(currentPage);
+
                 for (Page page: currentPage.expandPage()) {
                     urlContainer.addUrl(page);
                 }

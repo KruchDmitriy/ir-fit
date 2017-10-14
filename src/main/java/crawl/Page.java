@@ -8,15 +8,14 @@ import org.jsoup.nodes.Element;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Calendar;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class Page {
     private final URI url;
     private final URI parentUrl;
-    private Date uploadDate;
+    private LocalDateTime uploadDate;
     private Element body;
     private static final Logger LOGGER = Logger.getLogger(Page.class);
 
@@ -33,7 +32,7 @@ public class Page {
         return parentUrl;
     }
 
-    public Date getUploadDate() {
+    public LocalDateTime getUploadDate() {
         return uploadDate;
     }
 
@@ -68,10 +67,14 @@ public class Page {
     }
 
     private void downloadPage() {
+        if (body != null) {
+            return;
+        }
+
         Document document;
         try {
             Connection.Response response = Crawler.getConnection(url.toString()).execute();
-            uploadDate = Calendar.getInstance().getTime();
+            uploadDate = LocalDateTime.now();
             document = response.parse();
         } catch (IOException e) {
             LOGGER.error("Error while downloading page " + url.toString(), e);
