@@ -80,10 +80,10 @@ public class DbConnection {
 
         String sqlInsertToURL = " insert into url_dt " +
                 "(url, source, source_hash, time_downloading) " +
-                "values (?, ?, ?, ? ); ";
+                "values (?, ?, ?, ? ) ";
 
         String sqlInsertParent = "insert into parent_url (url_id, parent_id) " +
-                "values (?, ?); ";
+                "values (?, ?) ";
 
         final String pathToFile = PATH + page.getUrl().toString()
                 .replaceAll("/", "_");
