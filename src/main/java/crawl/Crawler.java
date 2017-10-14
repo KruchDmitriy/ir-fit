@@ -22,22 +22,27 @@ public class Crawler {
     private final Thread[] workers;
     private final UrlContainer urlContainer;
 
-    public Crawler() throws IOException {
+    public Crawler() {
         this(DEFAULT_NUM_WORKERS);
     }
 
-    public Crawler(int numWorkers) throws IOException {
+    public Crawler(int numWorkers) {
         workers = new Thread[numWorkers];
-
-        List<URI> startUrls = Files.lines(PATH_TO_DATA_SOURCE)
-                .map(line -> {
-                    try {
-                        return new URI(line);
-                    } catch (URISyntaxException e) {
-                        LOGGER.error(e.getMessage(), e);
-                        throw new RuntimeException(e);
-                    }
-                }).collect(Collectors.toList());
+        List<URI> startUrls;
+        try {
+             startUrls = Files.lines(PATH_TO_DATA_SOURCE)
+                    .map(line -> {
+                        try {
+                            return new URI(line);
+                        } catch (URISyntaxException e) {
+                            LOGGER.error(e.getMessage(), e);
+                            throw new RuntimeException(e);
+                        }
+                    }).collect(Collectors.toList());
+        } catch (IOException e) {
+            LOGGER.error("Error while reading file start_pages.txt", e);
+            throw new RuntimeException(e);
+        }
 
         urlContainer = new UrlTimedQueue(startUrls);
     }

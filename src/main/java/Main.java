@@ -1,9 +1,10 @@
-/**
- * Created by kate on 14.10.17.
- */
+import crawl.Crawler;
+
 public class Main {
-
-    public static void main(String[] args) {
-
+    public static void main(String[] args) throws InterruptedException {
+        Crawler crawler = new Crawler(1);
+        crawler.start();
+        Thread.sleep(10000);
+        crawler.stop();
     }
 }
