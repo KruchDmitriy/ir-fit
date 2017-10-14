@@ -7,6 +7,34 @@
     <groupId>ru.spbau.mit</groupId>
     <artifactId>ir-fit</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
+    <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.7.2</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.panforge/robots -->
+        <dependency>
+            <groupId>com.panforge</groupId>
+            <artifactId>robots</artifactId>
+            <version>1.2.0</version>
+        </dependency>
+
+    </dependencies>
 
 </project>
