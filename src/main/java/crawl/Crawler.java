@@ -24,6 +24,7 @@ public class Crawler {
     private static final int DEFAULT_NUM_WORKERS = 16;
     private static final String PATH_TO_EXISTS_URL = PATH_TO_RESOURCES + "existsURL.txt";
     private static final String PATH_TO_QUEUE = PATH_TO_RESOURCES + "queue.txt";
+    private static final int CONNECTION_TIMEOUT = 30000;
 
 
     private final Thread[] workers;
@@ -31,32 +32,40 @@ public class Crawler {
     private final DbConnection dbConnection = new DbConnection();
 
     public Crawler() {
-        this(DEFAULT_NUM_WORKERS);
+        this(DEFAULT_NUM_WORKERS, false);
     }
 
-    public Crawler(int numWorkers) {
+
+    public Crawler(int numWorkers, boolean startFromDump) {
         workers = new Thread[numWorkers];
-        List<URL> startUrls;
-        try {
-            startUrls = Files.lines(PATH_TO_DATA_SOURCE)
-                    .map(line -> {
-                        try {
-                            return new URL(line);
-                        } catch (MalformedURLException e) {
-                            LOGGER.error(e.getMessage());
-                            throw new RuntimeException(e);
-                        }
-                    }).collect(Collectors.toList());
-        } catch (IOException e) {
-            LOGGER.error("Error while reading file start_pages.txt", e);
-            throw new RuntimeException(e);
+
+        if (!startFromDump) {
+            List<URL> startUrls;
+            try {
+                startUrls = Files.lines(PATH_TO_DATA_SOURCE)
+                        .map(line -> {
+                            try {
+                                return new URL(line);
+                            } catch (MalformedURLException e) {
+                                LOGGER.error(e.getMessage());
+                                throw new RuntimeException(e);
+                            }
+                        }).collect(Collectors.toList());
+            } catch (IOException e) {
+                LOGGER.error("Error while reading file start_pages.txt", e);
+                throw new RuntimeException(e);
+            }
+            urlContainer = new UrlTimedQueue(startUrls);
+        }else  {
+            urlContainer = new UrlTimedQueue();
+            startFromDump(PATH_TO_QUEUE, PATH_TO_EXISTS_URL);
         }
 
-        urlContainer = new UrlTimedQueue(startUrls);
     }
 
     static Connection getConnection(String url) {
-        return Jsoup.connect(url).userAgent(BOT_NAME);
+        return Jsoup.connect(url).userAgent(BOT_NAME)
+                .timeout(CONNECTION_TIMEOUT);
     }
 
     public void start() {
@@ -75,6 +84,10 @@ public class Crawler {
 
     private void dump(@NotNull String fileQueue, @NotNull String fileExistsUrls) {
         urlContainer.dump(fileQueue, fileExistsUrls);
+    }
+
+    private void startFromDump(@NotNull String fileQueue, @NotNull String fileExistsUrls) {
+        urlContainer.startFromDump(fileQueue, fileExistsUrls);
     }
 
     private void dumpingThread() {
@@ -97,10 +110,9 @@ public class Crawler {
         public void run() {
             while (!Thread.currentThread().isInterrupted()) {
                 Page currentPage = urlContainer.getUrl();
-                LOGGER.info(currentPage);
+                LOGGER.info("Parsing page " + currentPage);
                 for (Page page : currentPage.expandPage()) {
                     urlContainer.addUrl(page);
-                    LOGGER.info(page);
                 }
 
                 dbConnection.insertToUrlRow(currentPage);

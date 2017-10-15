@@ -8,46 +8,64 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class UrlTimedQueue implements UrlContainer {
-    private final TreeMap<ExecutionTime, Page> urls = new TreeMap<>();
-    private final HashSet<URI> seenUrls = new LinkedHashSet<>();
+    private final PriorityQueue<Page> uris = new PriorityQueue<>(Page::compareViaDateToUpload);
+    private final HashSet<String> seenUris = new LinkedHashSet<>();
     private final CheckerPoliteness checkerPoliteness;
     private static final Logger LOGGER = Logger.getLogger(UrlTimedQueue.class);
     private final URI basePage;
 
-    UrlTimedQueue(List<URL> startUrls) {
+    UrlTimedQueue() {
         try {
-            basePage = new URI("http://www.google.com");
+            basePage = new URI("http://www.google.com/");
         } catch (URISyntaxException e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error(e);
             throw new RuntimeException(e);
         }
+        checkerPoliteness = new CheckerPoliteness();
+    }
+
+    UrlTimedQueue(List<URL> startUrls) {
+        this();
 
         startUrls.forEach(url -> {
             try {
-                seenUrls.add(url.toURI());
-                putPage(LocalDateTime.now(), new Page(url, basePage.toURL()));
-            } catch (URISyntaxException | MalformedURLException  e) {
+                seenUris.add(url.toURI().toString());
+                putPage(new Page(url, basePage.toURL()));
+            } catch (URISyntaxException | MalformedURLException e) {
                 LOGGER.error(e.getMessage());
                 throw new RuntimeException(e);
             }
         });
-        checkerPoliteness = new CheckerPoliteness(startUrls);
+
+        checkerPoliteness.addStartUrls(startUrls);
     }
 
     @Override
     public synchronized Page getUrl() {
-        Page page = urls.firstEntry().getValue();
-        urls.remove(urls.firstKey());
-        return page;
+        while (true) {
+            final Page page = uris.poll();
+            if (!checkerPoliteness.canUpdate(page)) {
+                page.setDateToUpload(
+                        checkerPoliteness.getLastUpdatePlusDelay(page));
+                uris.add(page);
+                continue;
+            }
+
+            checkerPoliteness.setLastUpdate(page.getHost());
+            return page;
+        }
     }
 
     @Override
     public synchronized void addUrl(Page page) {
-        if (seenUrls.contains(page.getUri())) {
+        if (seenUris.contains(page.getUri().toString())) {
             return;
         }
 
@@ -55,47 +73,25 @@ public class UrlTimedQueue implements UrlContainer {
             return;
         }
 
-        int delay = checkerPoliteness.getDelay(page);
-        LocalDateTime downloadDate = getDateAfterMillis(page.getCreateDate(), delay);
-        putPage(downloadDate, page);
+        putPage(page);
     }
 
-    private static LocalDateTime getDateAfterMillis(LocalDateTime current, int milliseconds) {
-        return current.plusNanos(milliseconds * 1000);
-    }
-
-    private void putPage(LocalDateTime time, Page page) {
-        urls.put(new ExecutionTime(time, page), page);
-    }
-
-    private static class ExecutionTime implements Comparable<ExecutionTime> {
-        final LocalDateTime time;
-        final int order;
-
-        ExecutionTime(LocalDateTime time, Page page) {
-            this.time = time;
-            order = page.toString().hashCode();
-        }
-
-        @Override
-        public int compareTo(@NotNull ExecutionTime o) {
-            int compare = time.compareTo(o.time);
-            if (compare != 0) {
-                return compare;
-            }
-
-            return order - o.order;
-        }
+    private void putPage(Page page) {
+        seenUris.add(page.getUri().toString());
+        checkerPoliteness.setLastUpdate(page.getHost());
+        LocalDateTime time = checkerPoliteness.getLastUpdatePlusDelay(page);
+        page.setDateToUpload(time);
+        uris.add(page);
     }
 
     @Override
     public void dump(@NotNull String fileQueue, @NotNull String fileExistsUrl) {
         try (Writer writerQueue =
                      new BufferedWriter(new OutputStreamWriter(
-                             new FileOutputStream(fileQueue))) ;
-             Writer existsUrl =        new BufferedWriter(new OutputStreamWriter(
-                     new FileOutputStream(fileExistsUrl)))  ) {
-            urls.forEach((date, page) -> {
+                             new FileOutputStream(fileQueue)));
+             Writer existsUrl = new BufferedWriter(new OutputStreamWriter(
+                     new FileOutputStream(fileExistsUrl)))) {
+            uris.forEach(page -> {
                 try {
                     writerQueue.write(page.toString() + "\n");
                 } catch (IOException e) {
@@ -103,7 +99,7 @@ public class UrlTimedQueue implements UrlContainer {
                 }
             });
 
-            seenUrls.forEach(uri -> {
+            seenUris.forEach(uri -> {
                 try {
                     existsUrl.write(uri + "\n");
                 } catch (IOException e) {
@@ -113,6 +109,25 @@ public class UrlTimedQueue implements UrlContainer {
 
         } catch (IOException ex) {
             LOGGER.warn(ex.getMessage());
+        }
+    }
+
+    @Override
+    public void startFromDump(@NotNull String fileQueue, @NotNull String fileExistsUrl) {
+        try (Stream<String> streamQueue = Files.lines(Paths.get(fileQueue));
+             Stream<String> streamExistsUrl = Files.lines(Paths.get(fileQueue))) {
+
+            streamExistsUrl.forEach(seenUris::add);
+
+            streamQueue.forEach(line -> {
+                try {
+                    Page currentPage = new Page(new URL(line), basePage.toURL());
+                    putPage(currentPage);
+                } catch (URISyntaxException | MalformedURLException ex) {
+                    LOGGER.error(ex.getMessage());
+                }
+            });
+        } catch (IOException ignored) {
         }
     }
 }

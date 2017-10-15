@@ -1,6 +1,5 @@
 package db;
 
-import com.sun.deploy.security.ValidationState;
 import crawl.Page;
 import db.readConfig.Config;
 import org.apache.log4j.Logger;
@@ -34,11 +33,6 @@ public class DbConnection {
         createParentTable();
     }
 
-    @NotNull
-    public Connection getConnection() {
-        return connection;
-    }
-
     private boolean createConnection() {
         try {
             if (config.getDriver() != null) {
@@ -64,9 +58,8 @@ public class DbConnection {
     @Nullable
     public int selectFromUrlByUrl(@NotNull String url) {
         String sql = " { ? = call selectByUrl ( ? ) } ";
-        LOGGER.debug(sql.toString());
         try {
-            return runExecuteSqlSelectQeury(sql.toString(), url);
+            return runExecuteSqlSelectQuery(sql, url);
         } catch (SQLException ex) {
             LOGGER.warn(ex.getMessage());
             return -1;
@@ -101,7 +94,7 @@ public class DbConnection {
             statement.setString(1, page.getUrl().toString());
             statement.setString(2, pathToFile);
             statement.setInt(3, page.hashCode());
-            statement.setString(4, page.getCreateDate().toString());
+            statement.setString(4, page.getCreationDate().toString());
 
             final int rows = statement.executeUpdate();
             if (rows > 0) {
@@ -194,10 +187,10 @@ public class DbConnection {
 
     @Nullable
     private int
-    runExecuteSqlSelectQeury(@NotNull String sql, @NotNull String url) throws SQLException {
+    runExecuteSqlSelectQuery(@NotNull String sql, @NotNull String url) throws SQLException {
         CallableStatement statement = connection.prepareCall(sql);
         statement.registerOutParameter(1, Types.INTEGER);
-        statement.setString(2, "'" + url + "'");
+        statement.setString(2,  url);
         statement.execute();
         return statement.getInt(1);
     }
