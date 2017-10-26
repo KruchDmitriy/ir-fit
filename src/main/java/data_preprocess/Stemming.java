@@ -1,16 +1,13 @@
-package date_preprocess;
+package data_preprocess;
 
-import date_preprocess.utils.Utils;
+import data_preprocess.utils.Utils;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,7 +20,7 @@ public class Stemming {
     private static final Logger LOGGER = Logger.getLogger(Stemming.class);
     private int treshold = 1500;
 
-    private HashMap<String, Long> strToFrequency;
+    private Map<String, Long> strToFrequency;
 
     private String str = " мамой вылось рамы";
 
@@ -43,8 +40,12 @@ public class Stemming {
                 stringStream
                         .map(line -> line.split(" "))
                         .flatMap(Arrays::stream)).flatMap(Function.identity())
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+                .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
 
+    }
+
+    private void writeHistogramToFile(final @NotNull String fileName) {
+//        strToFrequency.s;
     }
 
 
