@@ -6,9 +6,9 @@ public class Main {
         String log4jConfPath = "src/main/resources/log4j.properties";
         PropertyConfigurator.configure(log4jConfPath);
 
-        boolean loadFromDump = true;
-        if (args.length != 0 &&
-                ( args[0].equalsIgnoreCase("true") || args[0].equalsIgnoreCase("false"))) {
+        boolean loadFromDump = false;
+        if (args.length != 0 && (args[0].equalsIgnoreCase("true")
+                        || args[0].equalsIgnoreCase("false"))) {
             loadFromDump = Boolean.valueOf(args[0]);
         }
 

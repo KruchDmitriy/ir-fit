@@ -20,6 +20,7 @@ public class UrlTimedQueue implements UrlContainer {
     private final CheckerPoliteness checkerPoliteness;
     private static final Logger LOGGER = Logger.getLogger(UrlTimedQueue.class);
     private final URI basePage;
+    private final static Random RNG = new Random();
 
     UrlTimedQueue() {
         try {
@@ -49,12 +50,21 @@ public class UrlTimedQueue implements UrlContainer {
 
     @Override
     public synchronized Page getUrl() {
+        int tryCount = 0;
         while (true) {
             final Page page = uris.poll();
             if (!checkerPoliteness.canUpdate(page)) {
                 page.setDateToUpload(
                         checkerPoliteness.getLastUpdatePlusDelay(page));
+
+                if (tryCount > 3) {
+                    page.setDateToUpload(LocalDateTime.now().plusMinutes(
+                        RNG.nextInt(10)
+                    ));
+                }
+
                 uris.add(page);
+                tryCount++;
                 continue;
             }
 
@@ -128,6 +138,7 @@ public class UrlTimedQueue implements UrlContainer {
                 }
             });
         } catch (IOException ignored) {
+            LOGGER.warn(ignored);
         }
     }
 }

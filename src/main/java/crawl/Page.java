@@ -2,6 +2,7 @@ package crawl;
 
 import org.apache.log4j.Logger;
 import org.jsoup.Connection;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import java.io.IOException;
@@ -144,7 +145,15 @@ public class Page {
         try {
             Connection.Response response = Crawler.getConnection(url.toString()).execute();
             creationDate = LocalDateTime.now();
-            body = response.parse().body();
+
+            Document document = response.parse();
+            CheckerPoliteness.RobotsMeta meta = CheckerPoliteness.getRobotsMeta(document);
+            if (!meta.canArchive) {
+                isValidUploaded = false;
+                return;
+            }
+
+            body = document.body();
             isValidUploaded = true;
         } catch (IOException e) {
             LOGGER.error("Error while downloading page " + url.toString() + e);

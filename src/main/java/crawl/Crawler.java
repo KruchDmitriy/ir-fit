@@ -115,7 +115,9 @@ public class Crawler {
                     urlContainer.addUrl(page);
                 }
 
-                dbConnection.insertToUrlRow(currentPage);
+                if (currentPage.isValidUploaded()) {
+                    dbConnection.insertToUrlRow(currentPage);
+                }
             }
         }
     }

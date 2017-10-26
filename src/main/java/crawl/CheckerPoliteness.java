@@ -24,6 +24,7 @@ class CheckerPoliteness {
     private final HashMap<String, LocalDateTime> hostsLastUpdate = new HashMap<>();
     private static final int DEFAULT_DELAY = 500;
     private static final int CONNECTION_TIMEOUT = 2000;
+    private static final int CONNECTION_READ_TIMEOUT = 30000;
     private static final Logger LOGGER = Logger.getLogger(CheckerPoliteness.class);
 
 
@@ -136,6 +137,7 @@ class CheckerPoliteness {
         }
 
         connection.setConnectTimeout(CONNECTION_TIMEOUT);
+        connection.setReadTimeout(CONNECTION_READ_TIMEOUT);
         try (InputStream robotsStream = connection.getInputStream()) {
             return RobotsTxt.read(robotsStream);
         } catch (RuntimeException | IOException e) {
@@ -147,7 +149,7 @@ class CheckerPoliteness {
         }
     }
 
-    private static class RobotsMeta {
+    static class RobotsMeta {
         final boolean canIndex;
         final boolean canFollow;
         final boolean canArchive;
