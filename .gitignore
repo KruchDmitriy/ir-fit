@@ -1,6 +1,5 @@
 .idea/**
 **.iml
-**.py
 log/
 target/
 src/main/resources/documents/*
