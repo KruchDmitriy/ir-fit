@@ -26,7 +26,7 @@ public class SimplePreprocessing {
     public void fileToLowerCase(final @NotNull String fileName, final @NotNull String outFile) {
         try (Stream<String> stream = Files.lines(Paths.get(fileName));
              PrintWriter writer = new PrintWriter(outFile)) {
-            stream
+            stream.parallel()
                     .map(String::toLowerCase)
                     .map(SimplePreprocessing::processWord)
                     .forEach(writer::println);

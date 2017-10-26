@@ -1,6 +1,8 @@
 package data_preprocess;
 
+
 import data_preprocess.utils.Utils;
+import opennlp.tools.stemmer.PorterStemmer;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,10 +24,10 @@ public class Stemming {
 
     private Map<String, Long> strToFrequency;
 
-    public void createTableWithFrequency(final @NotNull String dir) throws IOException {
+    private Stream<String> createTableWithFrequency(final @NotNull String dir) throws IOException {
         List<Path> allFiles = Utils.getAllFiles(dir);
 
-        strToFrequency = allFiles.stream().map(path -> {
+        return allFiles.stream().map(path -> {
             try {
                 return Files.lines(path);
             } catch (IOException e) {
@@ -36,9 +38,21 @@ public class Stemming {
         }).parallel().map(stringStream ->
                 stringStream
                         .map(line -> line.split(" "))
-                        .flatMap(Arrays::stream)).flatMap(Function.identity())
-                .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
+                        .flatMap(Arrays::stream)).flatMap(Function.identity());
 
+    }
+
+
+    public void runStemming(final @NotNull String dir) {
+        PorterStemmer stemmer = new PorterStemmer();
+        try {
+            Stream<String> stringStream = createTableWithFrequency(dir);
+            strToFrequency = stringStream.parallel()
+                    .map(stemmer::stem)
+                    .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
+        } catch (IOException ex) {
+            LOGGER.debug(ex.getMessage());
+        }
     }
 
     public void writeHistogramToFile(final @NotNull String fileName) {
