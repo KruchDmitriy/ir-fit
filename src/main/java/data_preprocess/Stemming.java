@@ -10,23 +10,20 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Created by kate on 26.10.17.
- */
 public class Stemming {
 
     private static final Logger LOGGER = Logger.getLogger(Stemming.class);
-
     private Map<String, Long> strToFrequency;
+    private String str = "мамой вылось рамы";
 
-    private Stream<String> createTableWithFrequency(final @NotNull String dir) throws IOException {
-        List<Path> allFiles = Utils.getAllFiles(dir);
-
+    private Stream<String> createFrequencyTable(final @NotNull String dir) throws IOException {
+        List<Path> allFiles = Utils.getAllFiles(Paths.get(dir));
         return allFiles.stream().map(path -> {
             try {
                 return Files.lines(path);
@@ -46,7 +43,7 @@ public class Stemming {
     public void runStemming(final @NotNull String dir) {
         PorterStemmer stemmer = new PorterStemmer();
         try {
-            Stream<String> stringStream = createTableWithFrequency(dir);
+            Stream<String> stringStream = createFrequencyTable(dir);
             strToFrequency = stringStream.parallel()
                     .map(stemmer::stem)
                     .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
