@@ -2,7 +2,6 @@ package crawl;
 
 import com.panforge.robotstxt.RobotsTxt;
 import org.apache.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;

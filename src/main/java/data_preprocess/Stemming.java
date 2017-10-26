@@ -5,6 +5,7 @@ import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -18,14 +19,10 @@ import java.util.stream.Stream;
 public class Stemming {
 
     private static final Logger LOGGER = Logger.getLogger(Stemming.class);
-    private int treshold = 1500;
 
     private Map<String, Long> strToFrequency;
 
-    private String str = " мамой вылось рамы";
-
-
-    private void createTableWithFrequency(final @NotNull String dir) throws IOException {
+    public void createTableWithFrequency(final @NotNull String dir) throws IOException {
         List<Path> allFiles = Utils.getAllFiles(dir);
 
         strToFrequency = allFiles.stream().map(path -> {
@@ -44,9 +41,19 @@ public class Stemming {
 
     }
 
-    private void writeHistogramToFile(final @NotNull String fileName) {
-//        strToFrequency.s;
+    public void writeHistogramToFile(final @NotNull String fileName) {
+        List<Map.Entry<String, Long>> list = new ArrayList<>(strToFrequency.entrySet());
+        Collections.sort(list, new Comparator<Map.Entry<String, Long>>() {
+            public int compare(Map.Entry<String, Long> o1, Map.Entry<String, Long> o2) {
+                return (o1.getValue()).compareTo(o2.getValue());
+            }
+        });
+        try (PrintWriter writer = new PrintWriter(fileName)) {
+            for (Map.Entry<String, Long> item : list) {
+                writer.println(item.getKey() + " " + item.getValue());
+            }
+        } catch (IOException ex) {
+            LOGGER.debug(ex.getMessage());
+        }
     }
-
-
 }
