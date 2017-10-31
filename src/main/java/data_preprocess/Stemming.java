@@ -1,15 +1,12 @@
 package data_preprocess;
 
-
 import data_preprocess.utils.Utils;
-import opennlp.tools.stemmer.PorterStemmer;
+import opennlp.tools.stemmer.snowball.SnowballStemmer;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
@@ -22,43 +19,37 @@ public class Stemming {
     private Map<String, Long> strToFrequency;
     private String str = "мамой вылось рамы";
 
-    private Stream<String> createFrequencyTable(final @NotNull String dir) throws IOException {
-        List<Path> allFiles = Utils.getAllFiles(Paths.get(dir));
-        return allFiles.stream().map(path -> {
-            try {
-                return Files.lines(path);
-            } catch (IOException e) {
-                LOGGER.debug(String.format(" file: %s message: %s ",
-                        path.getFileName(), e.getMessage()));
-                return Stream.of("");
-            }
-        }).parallel().map(stringStream ->
-                stringStream
-                        .map(line -> line.split(" "))
-                        .flatMap(Arrays::stream)).flatMap(Function.identity());
-
+    private Stream<String> readWords(final @NotNull String dir) throws IOException {
+        return Utils.readFiles(Paths.get(dir))
+                .map(s -> s.split("\\s+"))
+                .flatMap(Arrays::stream);
     }
 
 
     public void runStemming(final @NotNull String dir) {
-        PorterStemmer stemmer = new PorterStemmer();
+        SnowballStemmer stemmer = new SnowballStemmer(SnowballStemmer.ALGORITHM.RUSSIAN);
         try {
-            Stream<String> stringStream = createFrequencyTable(dir);
-            strToFrequency = stringStream.parallel()
-                    .map(stemmer::stem)
-                    .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
+            Stream<String> stringStream = readWords(dir);
+//                    .filter(s -> !s.matches("^\\s*([0-9]+)\\s*"));
+
+//            List<String> list = stringStream.collect(Collectors.toList());
+//            for (String word : list) {
+//                System.out.println(word + " -> " + stemmer.stem(word));
+//            }
+//            stringStream.forEach(System.out::println);
+            strToFrequency = stringStream
+                            .map(stemmer::stem)
+                            .map(CharSequence::toString)
+                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
         } catch (IOException ex) {
             LOGGER.debug(ex.getMessage());
+
         }
     }
 
     public void writeHistogramToFile(final @NotNull String fileName) {
         List<Map.Entry<String, Long>> list = new ArrayList<>(strToFrequency.entrySet());
-        Collections.sort(list, new Comparator<Map.Entry<String, Long>>() {
-            public int compare(Map.Entry<String, Long> o1, Map.Entry<String, Long> o2) {
-                return (o1.getValue()).compareTo(o2.getValue());
-            }
-        });
+        Collections.sort(list, Comparator.comparing(o -> -(o.getValue())));
         try (PrintWriter writer = new PrintWriter(fileName)) {
             for (Map.Entry<String, Long> item : list) {
                 writer.println(item.getKey() + " " + item.getValue());
