@@ -16,30 +16,22 @@ import java.util.stream.Stream;
 public class Stemming {
 
     private static final Logger LOGGER = Logger.getLogger(Stemming.class);
-    private Map<String, Long> strToFrequency;
-    private String str = "мамой вылось рамы";
 
-    private Stream<String> readWords(final @NotNull String dir) throws IOException {
-        return Utils.readFiles(Paths.get(dir))
-                .map(s -> s.split("\\s+"))
-                .flatMap(Arrays::stream);
+    private Map<String, Long> strToFrequency;
+
+    public Map<String, Long> getStrToFrequency() {
+        return strToFrequency;
     }
 
-
-    public void runStemming(final @NotNull String dir) {
+    public void runStemming() {
         SnowballStemmer stemmer = new SnowballStemmer(SnowballStemmer.ALGORITHM.RUSSIAN);
         try {
-            Stream<String> stringStream = readWords(dir);
+            Stream<String> stringStream = Utils.readWords("../ir-fit-data/texts/");
 //                    .filter(s -> !s.matches("^\\s*([0-9]+)\\s*"));
 
-//            List<String> list = stringStream.collect(Collectors.toList());
-//            for (String word : list) {
-//                System.out.println(word + " -> " + stemmer.stem(word));
-//            }
-//            stringStream.forEach(System.out::println);
             strToFrequency = stringStream
-                            .map(stemmer::stem)
-                            .map(CharSequence::toString)
+                    .map(stemmer::stem)
+                    .map(CharSequence::toString)
                     .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
         } catch (IOException ex) {
             LOGGER.debug(ex.getMessage());
