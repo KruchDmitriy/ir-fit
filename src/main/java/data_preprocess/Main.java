@@ -12,13 +12,9 @@ public class Main {
         String log4jConfPath = "src/main/resources/log4j.properties";
         PropertyConfigurator.configure(log4jConfPath);
         Stemming stemming = new Stemming();
-        try {
-            stemming.createTableWithFrequency("src/main/resources/patch/");
-            stemming.writeHistogramToFile("src/main/resources/scripts/data_histogram.txt");
-        } catch (IOException ex) {
-            System.out.println(ex.getMessage());
-        }
 
+        stemming.runStemming("../ir-fit-data/texts/");
+        stemming.writeHistogramToFile("src/main/resources/scripts/data_histogram.txt");
     }
 
 }
