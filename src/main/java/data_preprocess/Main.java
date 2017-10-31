@@ -14,6 +14,7 @@ public class Main {
 //        stemming.runStemming();
 //        stemming.writeHistogramToFile("src/main/resources/scripts/data_histogram.txt");
         InvertIndex invertIndex = new InvertIndex("src/main/resources/tmp/");
+        invertIndex.start();
     }
 
 }

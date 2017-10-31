@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
@@ -26,7 +27,7 @@ public class Stemming {
     public void runStemming() {
         SnowballStemmer stemmer = new SnowballStemmer(SnowballStemmer.ALGORITHM.RUSSIAN);
         try {
-            Stream<String> stringStream = Utils.readWords("../ir-fit-data/texts/");
+            Stream<String> stringStream = Utils.readWords(Paths.get("../ir-fit-data/texts/"));
 //                    .filter(s -> !s.matches("^\\s*([0-9]+)\\s*"));
 
             strToFrequency = stringStream

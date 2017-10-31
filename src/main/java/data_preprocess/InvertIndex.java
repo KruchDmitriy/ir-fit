@@ -75,21 +75,44 @@ public class InvertIndex {
         List<Path> allFiles = Utils.getAllFiles(pathToDir);
 
         for (Path path : allFiles) {
-            List<String> wordInFile = Utils.readFiles(path).collect(Collectors.toList());
-            wordInFile.stream().distinct().forEach(word -> wordToListFiles
-                    .get(word)
-                    .add(path.toString()));
+            List<String> wordInFile = null;
+
+            try {
+                wordInFile = Utils.readWords(path).collect(Collectors.toList());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            if (wordInFile != null) {
+                wordInFile.stream()
+                        .distinct()
+                        .forEach(word -> wordToListFiles
+                                .get(word)
+                                .add(path.toString()));
+            }
         }
 
         dumpToFileWordToListFiles(OUTPUT_DIR);
     }
 
     private void createMapWithWords() {
-        Stream<String> wordStream = Utils.readFiles(pathToDir);
-        uniqueWords = wordStream.distinct().collect(Collectors.toList());
+
+        Stream<String> wordStream = null;
+        try {
+            wordStream = Utils.readWords(pathToDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if (wordStream != null) {
+            uniqueWords = wordStream
+                    .distinct()
+                    .collect(Collectors.toList());
+        }
+
         uniqueWords
                 .forEach(word -> {
-                    wordToListFiles.put(word, Collections.emptyList());
+                    wordToListFiles.put(word, new ArrayList<>());
                     wordToListPositionInFile.put(word, new LookUpTable());
                 });
     }
@@ -180,12 +203,13 @@ public class InvertIndex {
 
                 }
         );
-        pathToDir += "idx_pos";
+        pathToDir += "idx_pos_";
         runDump(pathToDir, lines);
     }
 
     private static String lineBuilder(String word, List<String> stringList) {
-        StringBuilder builder = new StringBuilder(word);
+        StringBuilder builder = new StringBuilder(word)
+                .append(" ");
         stringList.forEach(s -> {
             builder
                     .append(s)

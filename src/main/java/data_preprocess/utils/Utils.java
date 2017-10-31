@@ -52,8 +52,8 @@ public class Utils {
                 }).filter(Objects::nonNull);
     }
 
-    public static Stream<String> readWords(final @NotNull String dir) throws IOException {
-        return Utils.readFiles(Paths.get(dir))
+    public static Stream<String> readWords(final @NotNull Path dir) throws IOException {
+        return Utils.readFiles(dir)
                 .map(s -> s.split("\\s+"))
                 .flatMap(Arrays::stream);
     }
