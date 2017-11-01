@@ -208,7 +208,7 @@ public class UrlTimedQueue implements UrlContainer {
                     for (int i = 0; i < size.get(); i++) {
                         final Page page = queue.poll();
                         size.decrementAndGet();
-                        final String toFile = page.getUrl().toString() + " " + page.getParentUrl().toString();
+                        final String toFile = page.getUrl().toString() + " " + page.getParentUrl().toString() + "\n";
                         try {
                             Files.write(QUEUE_CACHE_FILE, toFile.getBytes(), StandardOpenOption.APPEND);
                         } catch (IOException e) {
