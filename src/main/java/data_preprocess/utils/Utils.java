@@ -14,10 +14,8 @@ import java.nio.charset.MalformedInputException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,20 +40,27 @@ public class Utils {
         charsetEncoder.onUnmappableCharacter(CodingErrorAction.REPLACE);
 
         return getAllFiles(directory).stream()
-                .flatMap(file -> {
+                .flatMap((Path file) -> {
 //                    System.out.println(file);
                     try {
                         return Files.lines(file);
-                    } catch (MalformedInputException ignored) {
-                        System.out.println(Math.sin(10.));
-                    }
-                    catch (UncheckedIOException e) {
-                        throw new RuntimeException(e);
-                    } catch (IOException e) {
+                    } catch (UncheckedIOException  | IOException e) {
                         System.out.println(Math.sin(20.));
                         e.printStackTrace();
                     }
                     return null;
                 }).filter(Objects::nonNull);
+    }
+
+    public static Stream<String> readWords(final @NotNull Path dir) throws IOException {
+        return Utils.readFiles(dir)
+                .map(s -> s.split("\\s+"))
+                .flatMap(Arrays::stream);
+    }
+
+    public static Map<String, Long> createFeqMap(Stream<String> stringStream) {
+        return stringStream
+                .map(CharSequence::toString)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
 }
