@@ -65,7 +65,7 @@ public class Utils {
     }
 
     public static Map<String, Long> createFeqMap(Stream<String> stringStream) {
-        return stringStream
+        return stringStream.parallel()
                 .map(CharSequence::toString)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }

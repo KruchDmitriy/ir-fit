@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class InvertIndex {
+class InvertIndex {
 
     private static final Logger LOGGER = Logger.getLogger(InvertIndex.class);
     private static final String OUTPUT_DIR = "src/main/resources/index/";
@@ -27,11 +27,11 @@ public class InvertIndex {
     private Map<String, LookUpTable> wordToListPositionInFile = new HashMap<>();
     private Map<String, LookUpTableFreq> wordToFreqWordInFile = new HashMap<>();
 
-    public InvertIndex(String pathToDirWithFiles) {
+    InvertIndex(String pathToDirWithFiles) {
         pathToDir = Paths.get(pathToDirWithFiles);
     }
 
-    public void start() {
+    void start() {
         LOGGER.debug(" get uniq words");
         createMapWithWords();
         LOGGER.debug(" create index; word to file");
@@ -45,43 +45,49 @@ public class InvertIndex {
     private void createWordToPositionInFiles() {
         List<Path> allFiles = Utils.getAllFiles(pathToDir);
 
-        wordToListPositionInFile.forEach((s, lookUpTable) ->
-                lookUpTable.initFileInMap(allFiles));
+        wordToListPositionInFile.entrySet().stream().parallel()
+                .forEach(entry -> entry
+                        .getValue()
+                        .initFileInMap(allFiles));
 
-        List<Integer> listPosition;
-        for (Path path : allFiles) {
-            try {
-                String content = new String(Files.readAllBytes(path));
-                for (String word : wordToListPositionInFile.keySet()) {
-                    listPosition = findStartIndexesForKeyword(word, content);
-                    wordToListPositionInFile.get(word).addListPositionInFile(path.toString(),
-                            listPosition);
+
+        allFiles.stream().parallel().forEach(path -> {
+                    try {
+                        String textFile = new String(Files.readAllBytes(path));
+
+                        for (String word : wordToListPositionInFile.keySet()) {
+                            wordToListPositionInFile.get(word)
+                                    .addListPositionInFile(path.toString(),
+                                            findStartIndexesForKeyword(word, textFile));
+                        }
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        );
         dumpToFileWordToPositionInFiles(OUTPUT_DIR);
 
     }
 
     private void createWordsToFreqInFiles() {
         List<Path> files = Utils.getAllFiles(pathToDir);
-        for (Path file : files) {
-            try {
-                Stream<String> wordInFile = Utils.readFile(file);
+        files.stream().parallel().forEach(file -> {
+                    try {
+                        Stream<String> wordInFile = Utils.readFile(file);
 
-                Map<String, Long> fileFreqMap = Utils.createFeqMap(wordInFile);
+                        Map<String, Long> fileFreqMap = Utils.createFeqMap(wordInFile);
 
-                fileFreqMap.forEach((word, freq) -> wordToFreqWordInFile.
-                        get(word)
-                        .addFreq(file.toString(), freq)
-                );
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+                        fileFreqMap.forEach(
+                                (word, freq) -> wordToFreqWordInFile.
+                                        get(word)
+                                        .addFreq(file.toString(), freq)
+                        );
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+        );
         dumpToFileWordToFreqInFiles(OUTPUT_DIR);
     }
 
@@ -109,7 +115,7 @@ public class InvertIndex {
             }
 
             if (wordInFile != null) {
-                wordInFile.stream()
+                wordInFile.stream().parallel()
                         .distinct()
                         .forEach(word -> wordToListFiles
                                 .get(word)
@@ -130,7 +136,7 @@ public class InvertIndex {
         }
 
         if (wordStream != null) {
-            uniqueWords = wordStream
+            uniqueWords = wordStream.parallel()
                     .distinct()
                     .collect(Collectors.toList());
         }
@@ -224,9 +230,11 @@ public class InvertIndex {
     private void dumpToFileWordToPositionInFiles(String pathToDir) {
         List<Map.Entry<String, LookUpTable>> list = sortMapByKey(wordToListPositionInFile);
         List<String> lines = new ArrayList<>();
-        list.forEach(stringLookUpTableEntry -> lines.add(stringLookUpTableEntry.getKey() +
-                " " + stringLookUpTableEntry.getValue().toString())
-        );
+        list.stream().parallel()
+                .forEach(stringLookUpTableEntry ->
+                        lines.add(stringLookUpTableEntry.getKey() +
+                                " " + stringLookUpTableEntry.getValue().toString())
+                );
         pathToDir += "idx_pos_";
         runDump(pathToDir, lines);
     }
