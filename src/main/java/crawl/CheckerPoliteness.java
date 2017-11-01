@@ -4,47 +4,50 @@ import com.panforge.robotstxt.RobotsTxt;
 import org.apache.log4j.Logger;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 class CheckerPoliteness {
     private final HashMap<String, RobotsTxt> hostToRobots = new HashMap<>();
     private final HashMap<String, Integer> hostsDelay = new HashMap<>();
-    private final HashMap<String, LocalDateTime> hostsLastUpdate = new HashMap<>();
+    private final LinkedHashMap<String, LocalDateTime> hostsLastQuery = new LinkedHashMap<>();
     private static final int DEFAULT_DELAY = 500;
     private static final int CONNECTION_TIMEOUT = 2000;
-    private static final int CONNECTION_READ_TIMEOUT = 30000;
+    private static final int CONNECTION_READ_TIMEOUT = 3000;
     private static final Logger LOGGER = Logger.getLogger(CheckerPoliteness.class);
 
-
-    public void addStartUrls(List<URL> startUrls) {
-        startUrls.forEach(url -> {
-            String host = url.getProtocol() + "://" + url.getHost();
-            hostsDelay.put(host, getDelay(host));
-            hostToRobots.put(host, getRobotsTxt(url.getProtocol(), url.getHost()));
-            hostsLastUpdate.put(host, LocalDateTime.now());
-        });
-    }
-
-    int getDelay(Page page) {
-        final String host = page.getHost();
-        if (hostsDelay.containsKey(host)) {
-            return hostsDelay.get(host);
+    public void addHost(String host) {
+        if (hostsLastQuery.containsKey(host)) {
+            return;
         }
 
-        int delay = getDelay(host);
-        hostsDelay.put(host, delay);
-        return delay;
+        hostsLastQuery.put(host, LocalDateTime.now());
+        hostsDelay.put(host, getDelay(host));
+    }
+
+    String getFirstFreeHost() {
+        for (Map.Entry<String, LocalDateTime> next: hostsLastQuery.entrySet()) {
+            String host = next.getKey();
+            if (LocalDateTime.now().compareTo(getLastUpdatePlusDelay(host)) > 0) {
+                hostsLastQuery.put(host, LocalDateTime.now());
+                return host;
+            }
+        }
+
+        return null;
+    }
+
+    private LocalDateTime getLastUpdatePlusDelay(String host) {
+        return LocalDateTime.now().plusNanos(hostsDelay.get(host) * 1000);
     }
 
     /**
@@ -56,7 +59,6 @@ class CheckerPoliteness {
         try {
             response = Crawler.getConnection(host + "/robots.txt").execute();
         } catch (IOException e) {
-            // TODO: LOG here
             return DEFAULT_DELAY;
         }
 
@@ -68,25 +70,6 @@ class CheckerPoliteness {
         }
 
         return DEFAULT_DELAY;
-    }
-
-    public LocalDateTime getLastUpdate(String host) {
-        return hostsLastUpdate.get(host);
-    }
-
-    public void setLastUpdate(String host) {
-        if (hostsLastUpdate.containsKey(host)) {
-            hostsLastUpdate.remove(host);
-        }
-        hostsLastUpdate.put(host, LocalDateTime.now());
-    }
-
-    public LocalDateTime getLastUpdatePlusDelay(Page page) {
-        return getLastUpdate(page.getHost()).plusNanos(getDelay(page) * 1000);
-    }
-
-    public boolean canUpdate(Page page) {
-        return getLastUpdatePlusDelay(page).compareTo(LocalDateTime.now()) < 0;
     }
 
     boolean hasAccess(Page page) {
@@ -104,9 +87,9 @@ class CheckerPoliteness {
     }
 
 
-    static RobotsMeta getRobotsMeta(Document document)
+    private static RobotsMeta getRobotsMeta(Element head)
             throws IOException {
-        final Elements elements = document.head()
+        final Elements elements = head
                 .getElementsByAttributeValue("name", "robots");
 
         Set<String> contents = elements.stream()
@@ -123,14 +106,24 @@ class CheckerPoliteness {
         return new RobotsMeta(canIndex, canFollow, canArchive);
     }
 
+    static boolean isGoodPage(Page page) throws NotValidUploadedException {
+        try {
+            RobotsMeta meta = getRobotsMeta(page.getHead());
+            return meta.canArchive && meta.canIndex && meta.canFollow;
+        } catch (IOException e) {
+            LOGGER.error(e.toString());
+            throw new RuntimeException(e);
+        }
+    }
+
     private static RobotsTxt getRobotsTxt(String protocol, String host) {
         URLConnection connection;
         try {
             connection = new URL(protocol, host, "/robots.txt").openConnection();
         } catch (IOException e) {
-            LOGGER.warn(e);
+            LOGGER.info(e);
             if (e.getCause() != null) {
-                LOGGER.warn(e.getCause());
+                LOGGER.info(e.getCause());
             }
             return null;
         }
@@ -140,9 +133,9 @@ class CheckerPoliteness {
         try (InputStream robotsStream = connection.getInputStream()) {
             return RobotsTxt.read(robotsStream);
         } catch (RuntimeException | IOException e) {
-            LOGGER.warn(e);
+            LOGGER.info(e);
             if (e.getCause() != null) {
-                LOGGER.warn(e.getCause());
+                LOGGER.info(e.getCause());
             }
             return null;
         }

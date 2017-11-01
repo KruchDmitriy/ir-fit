@@ -6,14 +6,9 @@ public class Main {
         String log4jConfPath = "src/main/resources/log4j.properties";
         PropertyConfigurator.configure(log4jConfPath);
 
-        boolean loadFromDump = false;
-        if (args.length != 0 && (args[0].equalsIgnoreCase("true")
-                        || args[0].equalsIgnoreCase("false"))) {
-            loadFromDump = Boolean.valueOf(args[0]);
-        }
-
-        Crawler crawler = new Crawler(10, loadFromDump);
+        Crawler crawler = new Crawler(10);
         crawler.start();
+
 //        Thread.sleep(10000);
 //        crawler.stop();
     }

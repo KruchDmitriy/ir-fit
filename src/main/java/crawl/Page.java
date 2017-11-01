@@ -1,7 +1,9 @@
 package crawl;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.log4j.Logger;
 import org.jsoup.Connection;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
@@ -11,6 +13,8 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -18,24 +22,22 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class Page {
+    private static final Logger LOGGER = Logger.getLogger(Page.class);
+
     private final URL url;
     private final URL parentUrl;
 
     private final URI uri;
-    private final URI parentUri;
 
     private LocalDateTime creationDate;
-    private LocalDateTime dateToUpload;
+    private Element head;
     private Element body;
-    private static final Logger LOGGER = Logger.getLogger(Page.class);
     private boolean isValidUploaded = false;
-    private static final String NOT_VALID_UPLOADED_BODY = "notValidUploaded";
 
     Page(URL url, URL baseUrl) throws URISyntaxException {
         this.url = url;
         this.parentUrl = baseUrl;
         this.uri = url.toURI();
-        this.parentUri = baseUrl.toURI();
         creationDate = LocalDateTime.now();
     }
 
@@ -55,16 +57,32 @@ public class Page {
         return creationDate;
     }
 
-    public String getBody() {
+    public String getBody() throws NotValidUploadedException {
         if (body == null) {
             downloadPage();
         }
 
         if (!isValidUploaded) {
-            return NOT_VALID_UPLOADED_BODY;
+            throw new NotValidUploadedException();
         }
 
         return body.html();
+    }
+
+    public Element getHead() throws NotValidUploadedException {
+        if (head == null) {
+            downloadPage();
+        }
+
+        if (!isValidUploaded) {
+            throw new NotValidUploadedException();
+        }
+
+        return head;
+    }
+
+    public String getText() throws NotValidUploadedException {
+        return Jsoup.parse(getBody()).text();
     }
 
     @Override
@@ -106,38 +124,21 @@ public class Page {
 
     @Override
     public boolean equals(Object obj) {
-        return (obj instanceof Page) && ((Page) obj).getUrl().equals(url);
+        return (obj instanceof Page) && ((Page) obj).getUrl().toString()
+                .equals(url.toString());
     }
 
     @Override
     public int hashCode() {
-        if (body == null) {
-            downloadPage();
-        }
+        return url.toString().hashCode();
+    }
 
-        if (!isValidUploaded) {
-            return NOT_VALID_UPLOADED_BODY.hashCode();
-        }
-
-        return body.toString().hashCode();
+    public String hash() throws NotValidUploadedException {
+        return DigestUtils.md5Hex(getText());
     }
 
     public URI getUri() {
         return uri;
-    }
-
-    public void setDateToUpload(LocalDateTime dateToUpload) {
-        this.dateToUpload = dateToUpload;
-    }
-
-    public static int compareViaDateToUpload(Page page1, Page page2) {
-        int compare = page1.dateToUpload.compareTo(page2.dateToUpload);
-        if (compare != 0) {
-            return compare;
-        }
-
-        return (int) Math.signum(page1.getUrl().hashCode() -
-                page2.getUrl().hashCode());
     }
 
     private void downloadPage() {
@@ -150,12 +151,7 @@ public class Page {
             creationDate = LocalDateTime.now();
 
             Document document = response.parse();
-            CheckerPoliteness.RobotsMeta meta = CheckerPoliteness.getRobotsMeta(document);
-            if (!meta.canArchive) {
-                isValidUploaded = false;
-                return;
-            }
-
+            head = document.head();
             body = document.body();
             isValidUploaded = true;
         } catch (IOException e) {
@@ -163,12 +159,6 @@ public class Page {
             isValidUploaded = false;
         }
     }
-
-    private static boolean checkExtension(String uri) {
-        String extension = uri.substring(uri.lastIndexOf(".") + 1);
-        return extension.equals("html");
-    }
-
 
     private static URI normalizedUri(String firstPart, String relative) throws URISyntaxException,
             MalformedURLException, UnsupportedEncodingException {
@@ -189,4 +179,5 @@ public class Page {
 
         return (new URI(protocol, host, relative, null)).normalize();
     }
+
 }

@@ -6,61 +6,44 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.nio.file.StandardOpenOption;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Crawler {
     static final String BOT_NAME = "irfit-bot";
     private static final Logger LOGGER = Logger.getLogger(Crawler.class);
-    private static final String PATH_TO_RESOURCES = "src/main/resources/";
-    private static final Path PATH_TO_DATA_SOURCE =
-            Paths.get(PATH_TO_RESOURCES + "start_pages.txt");
+    static final String PATH_TO_RESOURCES = "src/main/resources/";
     private static final int DEFAULT_NUM_WORKERS = 16;
-    private static final String PATH_TO_EXISTS_URL = PATH_TO_RESOURCES + "existsURL.txt";
-    private static final String PATH_TO_QUEUE = PATH_TO_RESOURCES + "queue.txt";
-    private static final int CONNECTION_TIMEOUT = 30000;
+    private static final String PATH_TO_DATA = "../ir-fit-data/";
+    private static final String PATH_TO_PAGES = PATH_TO_DATA + "documents/";
+    private static final String PATH_TO_TEXTS = PATH_TO_DATA + "texts/";
+    private static final int CONNECTION_TIMEOUT = 3000;
 
+    private final HashSet<String> pageHashCodes = new HashSet<>();
+    private static final String PATH_TO_HASH = PATH_TO_RESOURCES + "hash.txt";
 
     private final Thread[] workers;
     private final UrlContainer urlContainer;
     private final DbConnection dbConnection = new DbConnection();
 
     public Crawler() {
-        this(DEFAULT_NUM_WORKERS, false);
+        this(DEFAULT_NUM_WORKERS);
     }
 
 
-    public Crawler(int numWorkers, boolean startFromDump) {
+    public Crawler(int numWorkers) {
         workers = new Thread[numWorkers];
-
-        if (!startFromDump) {
-            List<URL> startUrls;
-            try {
-                startUrls = Files.lines(PATH_TO_DATA_SOURCE)
-                        .map(line -> {
-                            try {
-                                return new URL(line);
-                            } catch (MalformedURLException e) {
-                                LOGGER.error(e.getMessage());
-                                throw new RuntimeException(e);
-                            }
-                        }).collect(Collectors.toList());
-            } catch (IOException e) {
-                LOGGER.error("Error while reading file start_pages.txt", e);
-                throw new RuntimeException(e);
-            }
-            urlContainer = new UrlTimedQueue(startUrls);
-        }else  {
-            urlContainer = new UrlTimedQueue();
-            startFromDump(PATH_TO_QUEUE, PATH_TO_EXISTS_URL);
-        }
-
+        urlContainer = new UrlTimedQueue();
+        readDump();
+        startDumper();
     }
 
     static Connection getConnection(String url) {
@@ -69,7 +52,6 @@ public class Crawler {
     }
 
     public void start() {
-        dumpingThread();
         for (int i = 0; i < workers.length; i++) {
             workers[i] = new Thread(new Worker());
             workers[i].start();
@@ -82,27 +64,51 @@ public class Crawler {
         }
     }
 
-    private void dump(@NotNull String fileQueue, @NotNull String fileExistsUrls) {
-        urlContainer.dump(fileQueue, fileExistsUrls);
+    private void startDumper() {
+        new Dumper(this::writeDump);
     }
 
-    private void startFromDump(@NotNull String fileQueue, @NotNull String fileExistsUrls) {
-        urlContainer.startFromDump(fileQueue, fileExistsUrls);
+    private void writeDump() {
+        try (DataOutputStream hashDataOutputStream = new DataOutputStream(new FileOutputStream(PATH_TO_HASH))) {
+            hashDataOutputStream.writeInt(pageHashCodes.size());
+            pageHashCodes.forEach(hash -> {
+                try {
+                    writeString(hashDataOutputStream, hash);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            });
+        } catch (IOException e) {
+            LOGGER.error(e.toString(), e);
+        }
     }
 
-    private void dumpingThread() {
-        Thread dumpTread = new Thread(() -> {
-            try {
-                Thread.sleep(5 *   // minutes to sleep
-                        60 *   // seconds to a minute
-                        1000); // milliseconds to a second
-                dump(PATH_TO_QUEUE, PATH_TO_EXISTS_URL);
-            } catch (InterruptedException ex) {
-                LOGGER.warn(ex.getMessage());
-                dump(PATH_TO_QUEUE, PATH_TO_EXISTS_URL);
+    static void writeString(DataOutputStream dataOutputStream, String string) throws IOException {
+        dataOutputStream.writeInt(string.length());
+        dataOutputStream.writeChars(string);
+    }
+
+    static String readString(DataInputStream dataInputStream) throws IOException {
+        int length = dataInputStream.readInt();
+        char[] chars = new char[length];
+        for (int i = 0; i < length; i++) {
+            chars[i] = dataInputStream.readChar();
+        }
+
+        return String.valueOf(chars);
+    }
+
+    private void readDump() {
+        try (DataInputStream hashDataInputStream = new DataInputStream(new FileInputStream(PATH_TO_HASH))) {
+            final int hashSize = hashDataInputStream.readInt();
+            for (int i = 0; i < hashSize; i++) {
+                String hash = readString(hashDataInputStream);
+                pageHashCodes.add(hash);
             }
-        });
-        dumpTread.start();
+        } catch (IOException e) {
+            LOGGER.warn(e.toString());
+        }
     }
 
     private class Worker implements Runnable {
@@ -111,14 +117,46 @@ public class Crawler {
             while (!Thread.currentThread().isInterrupted()) {
                 Page currentPage = urlContainer.getUrl();
                 LOGGER.info("Parsing page " + currentPage);
-                for (Page page : currentPage.expandPage()) {
-                    urlContainer.addUrl(page);
-                }
+                try {
+                    if (!SearchManager.isGoodPage(currentPage)
+                        || !CheckerPoliteness.isGoodPage(currentPage)) {
+                        LOGGER.info("Bad page!");
+                        continue;
+                    }
 
-                if (currentPage.isValidUploaded()) {
-                    dbConnection.insertToUrlRow(currentPage);
+                    final String hash = currentPage.hash();
+                    if (pageHashCodes.contains(hash)) {
+                        LOGGER.info("Hash already was!");
+                        continue;
+                    }
+
+                    pageHashCodes.add(hash);
+
+                    for (Page page : currentPage.expandPage()) {
+                        urlContainer.addUrl(page);
+                    }
+
+                    final String fileName = writeToFile(currentPage);
+                    dbConnection.insertToUrlRow(currentPage, fileName);
+                } catch (NotValidUploadedException e) {
+                    LOGGER.info("Page " + currentPage + "wasn't uploaded properly");
                 }
             }
         }
+    }
+
+    private String writeToFile(Page page) throws NotValidUploadedException {
+        final String fileName = page.getUrl().toString().replaceAll("/", "_");
+        final String pathToDocument = PATH_TO_PAGES + fileName;
+        final String pathToText = PATH_TO_TEXTS + fileName;
+
+        try {
+            Files.write(Paths.get(pathToDocument), page.getBody().getBytes(), StandardOpenOption.WRITE);
+            Files.write(Paths.get(pathToText), page.getText().getBytes(), StandardOpenOption.WRITE);
+        } catch (IOException e) {
+            LOGGER.error(e.toString(), e);
+        }
+
+        return fileName;
     }
 }

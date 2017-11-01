@@ -66,7 +66,7 @@ public class DbConnection {
         }
     }
 
-    public boolean insertToUrlRow(@NotNull Page page) {
+    public boolean insertToUrlRow(@NotNull Page page, @NotNull String pathToFile) {
 
         String sqlInsertToURL = " insert into url_dt " +
                 "(url, source, source_hash, time_downloading) " +
@@ -74,17 +74,6 @@ public class DbConnection {
 
         String sqlInsertParent = "insert into parent_url (url_id, parent_id) " +
                 "values (?, ?) ";
-
-        final String pathToFile = PATH + page.getUrl().toString()
-                .replaceAll("/", "_");
-
-        try (Writer writer = new BufferedWriter(new OutputStreamWriter(
-                new FileOutputStream(pathToFile)))) {
-            writer.write(page.getBody());
-        } catch (IOException ex) {
-            LOGGER.warn(ex.getMessage());
-            return false;
-        }
 
         try (PreparedStatement statement =
                      connection.prepareStatement(sqlInsertToURL,
