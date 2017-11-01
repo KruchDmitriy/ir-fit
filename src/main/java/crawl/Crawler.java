@@ -142,7 +142,7 @@ public class Crawler {
                     final String fileName = writeToFile(currentPage);
                     dbConnection.insertToUrlRow(currentPage, fileName);
                 } catch (NotValidUploadedException e) {
-                    LOGGER.info("Page " + currentPage + "wasn't uploaded properly");
+                    LOGGER.warn("Page " + currentPage + "wasn't uploaded: " + e.toString());
                 }
             }
         }
