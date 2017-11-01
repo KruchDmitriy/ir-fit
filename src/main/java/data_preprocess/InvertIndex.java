@@ -44,6 +44,10 @@ public class InvertIndex {
 
     private void createWordToPositionInFiles() {
         List<Path> allFiles = Utils.getAllFiles(pathToDir);
+
+        wordToListPositionInFile.forEach((s, lookUpTable) ->
+                lookUpTable.initFileInMap(allFiles));
+
         List<Integer> listPosition;
         for (Path path : allFiles) {
             try {

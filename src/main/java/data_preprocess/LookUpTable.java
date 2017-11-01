@@ -1,5 +1,6 @@
 package data_preprocess;
 
+import java.nio.file.Path;
 import java.util.*;
 
 public class LookUpTable {
@@ -7,10 +8,12 @@ public class LookUpTable {
     private Map<String, List<Integer>> fileToListPositionWords = new HashMap<>();
 
     void addListPositionInFile(String fileName, List<Integer> integerList) {
-        if (!fileToListPositionWords.containsKey(fileName)) {
-            fileToListPositionWords.put(fileName, new ArrayList<>());
-        }
         fileToListPositionWords.get(fileName).addAll(integerList);
+    }
+
+    void initFileInMap(List<Path> paths) {
+        paths.forEach(path ->
+                fileToListPositionWords.put(path.toString(), new ArrayList<>()));
     }
 
     @Override
