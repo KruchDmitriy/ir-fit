@@ -33,7 +33,7 @@ public class Utils {
         }
     }
 
-    public static Stream<String> readFiles(Path directory) {
+    private static Stream<String> readFiles(Path directory) {
         Charset charset = Charset.defaultCharset();
         final CharsetEncoder charsetEncoder = charset.newEncoder();
         charsetEncoder.onMalformedInput(CodingErrorAction.REPLACE);
@@ -54,6 +54,12 @@ public class Utils {
 
     public static Stream<String> readWords(final @NotNull Path dir) throws IOException {
         return Utils.readFiles(dir)
+                .map(s -> s.split("\\s+"))
+                .flatMap(Arrays::stream);
+    }
+
+    public static Stream<String> readFile(final @NotNull Path file) throws IOException {
+        return Files.lines(file)
                 .map(s -> s.split("\\s+"))
                 .flatMap(Arrays::stream);
     }

@@ -7,7 +7,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
@@ -19,10 +18,6 @@ public class Stemming {
     private static final Logger LOGGER = Logger.getLogger(Stemming.class);
 
     private Map<String, Long> strToFrequency;
-
-    public Map<String, Long> getStrToFrequency() {
-        return strToFrequency;
-    }
 
     public void runStemming() {
         SnowballStemmer stemmer = new SnowballStemmer(SnowballStemmer.ALGORITHM.RUSSIAN);
@@ -42,7 +37,7 @@ public class Stemming {
 
     public void writeHistogramToFile(final @NotNull String fileName) {
         List<Map.Entry<String, Long>> list = new ArrayList<>(strToFrequency.entrySet());
-        Collections.sort(list, Comparator.comparing(o -> -(o.getValue())));
+        list.sort(Comparator.comparing(o -> -(o.getValue())));
         try (PrintWriter writer = new PrintWriter(fileName)) {
             for (Map.Entry<String, Long> item : list) {
                 writer.println(item.getKey() + " " + item.getValue());

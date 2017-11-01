@@ -9,9 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-/**
- * Created by kate on 26.10.17.
- */
 public class SimplePreprocessing {
     private static final Logger LOGGER = Logger.getLogger(SimplePreprocessing.class);
 

@@ -1,10 +1,8 @@
 package data_preprocess;
 
 import data_preprocess.utils.Utils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -17,10 +15,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Created by kate on 31.10.17.
- */
-
 public class InvertIndex {
 
     private static final Logger LOGGER = Logger.getLogger(InvertIndex.class);
@@ -28,21 +22,24 @@ public class InvertIndex {
 
     private final Path pathToDir;
     private List<String> uniqueWords = new ArrayList<>();
+
     private Map<String, List<String>> wordToListFiles = new HashMap<>();
     private Map<String, LookUpTable> wordToListPositionInFile = new HashMap<>();
+    private Map<String, LookUpTableFreq> wordToFreqWordInFile = new HashMap<>();
 
     public InvertIndex(String pathToDirWithFiles) {
         pathToDir = Paths.get(pathToDirWithFiles);
     }
 
     public void start() {
+        LOGGER.debug(" get uniq words");
         createMapWithWords();
+        LOGGER.debug(" create index; word to file");
         createWordsToFiles();
+        LOGGER.debug(" create index; word to position in each files");
         createWordToPositionInFiles();
-    }
-
-    public List<String> getUniqueWords() {
-        return uniqueWords;
+        LOGGER.debug("create index; word to freq in each file");
+        createWordsToFreqInFiles();
     }
 
     private void createWordToPositionInFiles() {
@@ -65,9 +62,33 @@ public class InvertIndex {
 
     }
 
+    private void createWordsToFreqInFiles() {
+        List<Path> files = Utils.getAllFiles(pathToDir);
+        for (Path file : files) {
+            try {
+                Stream<String> wordInFile = Utils.readFile(file);
 
-    public void createWordsToFreqInFiles() {
+                Map<String, Long> fileFreqMap = Utils.createFeqMap(wordInFile);
 
+                fileFreqMap.forEach((word, freq) -> wordToFreqWordInFile.
+                        get(word)
+                        .addFreq(file.toString(), freq)
+                );
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        dumpToFileWordToFreqInFiles(OUTPUT_DIR);
+    }
+
+    private void dumpToFileWordToFreqInFiles(String pathToDir) {
+        List<Map.Entry<String, LookUpTableFreq>> list = sortMapByKey(wordToFreqWordInFile);
+        List<String> lines = new ArrayList<>();
+        list.forEach(stringLookUpTableEntry -> lines.add(stringLookUpTableEntry.getKey() +
+                " " + stringLookUpTableEntry.getValue().toString())
+        );
+        pathToDir += "idx_freq_";
+        runDump(pathToDir, lines);
     }
 
     private void createWordsToFiles() {
@@ -114,8 +135,10 @@ public class InvertIndex {
                 .forEach(word -> {
                     wordToListFiles.put(word, new ArrayList<>());
                     wordToListPositionInFile.put(word, new LookUpTable());
+                    wordToFreqWordInFile.put(word, new LookUpTableFreq());
                 });
     }
+
 
     private void dumpToFileWordToListFiles(String pathToDir) {
         List<Map.Entry<String, List<String>>> listEntryMap = sortMapByKey(wordToListFiles);
@@ -197,11 +220,8 @@ public class InvertIndex {
     private void dumpToFileWordToPositionInFiles(String pathToDir) {
         List<Map.Entry<String, LookUpTable>> list = sortMapByKey(wordToListPositionInFile);
         List<String> lines = new ArrayList<>();
-        list.forEach(stringLookUpTableEntry -> {
-                    lines.add(stringLookUpTableEntry.getKey() +
-                            " " + stringLookUpTableEntry.getValue().toString());
-
-                }
+        list.forEach(stringLookUpTableEntry -> lines.add(stringLookUpTableEntry.getKey() +
+                " " + stringLookUpTableEntry.getValue().toString())
         );
         pathToDir += "idx_pos_";
         runDump(pathToDir, lines);
@@ -210,18 +230,15 @@ public class InvertIndex {
     private static String lineBuilder(String word, List<String> stringList) {
         StringBuilder builder = new StringBuilder(word)
                 .append(" ");
-        stringList.forEach(s -> {
-            builder
-                    .append(s)
-                    .append(";");
-        });
+        stringList.forEach(s -> builder
+                .append(s)
+                .append(";"));
         return builder.toString();
     }
 
     private static void writeToFile(PrintWriter writer, String line) {
         writer.write(line + "\n");
     }
-
 
     private static List<Integer> findStartIndexesForKeyword(String keyword,
                                                             String searchString) {
@@ -240,13 +257,7 @@ public class InvertIndex {
 
     private static <K extends String, V> List<Map.Entry<K, V>> sortMapByKey(Map<K, V> kvMap) {
         List<Map.Entry<K, V>> listEntryMap = new ArrayList<>(kvMap.entrySet());
-        listEntryMap.sort(new Comparator<Map.Entry<K, V>>() {
-            @Override
-            public int compare(Map.Entry<K, V> stringListEntry,
-                               Map.Entry<K, V> stringListEntry1) {
-                return (stringListEntry.getKey()).compareTo(stringListEntry1.getKey());
-            }
-        });
+        listEntryMap.sort(Comparator.comparing(stringListEntry -> (stringListEntry.getKey())));
         return listEntryMap;
     }
 }
