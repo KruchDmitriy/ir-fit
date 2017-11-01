@@ -18,15 +18,17 @@ import java.util.stream.Stream;
 import static crawl.Crawler.PATH_TO_RESOURCES;
 import static crawl.Crawler.readString;
 import static crawl.Crawler.writeString;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 public class UrlTimedQueue implements UrlContainer {
-    private static final int MAX_QUEUE_SIZE = 20_000;
+    private static final int MAX_QUEUE_SIZE = 30_000;
     private static final Logger LOGGER = Logger.getLogger(UrlTimedQueue.class);
     private final HashMap<String, Queue<Page>> hostToPages = new HashMap<>();
+    private final HashSet<String> seenPages = new HashSet<>();
     private final QueueCacher cacher = new QueueCacher();
     private final CheckerPoliteness checkerPoliteness;
 
-    private static final String PATH_TO_QUEUE = PATH_TO_RESOURCES + "queue.txt";
+    private static final String PATH_TO_QUEUE = PATH_TO_RESOURCES + "queue.dump";
 
     UrlTimedQueue() {
         checkerPoliteness = new CheckerPoliteness();
@@ -44,15 +46,16 @@ public class UrlTimedQueue implements UrlContainer {
             String freeHost = checkerPoliteness.getFirstFreeHost();
             if (freeHost == null) {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(300);
                 } catch (InterruptedException e) { return null; }
                 continue;
             }
 
             Queue<Page> pages = hostToPages.get(freeHost);
-
             if (pages.isEmpty()) {
                 hostToPages.remove(freeHost);
+                checkerPoliteness.removeHost(freeHost);
+                continue;
             }
 
             return pages.poll();
@@ -61,9 +64,11 @@ public class UrlTimedQueue implements UrlContainer {
 
     @Override
     public synchronized void addUrl(Page page) {
-        if (!checkerPoliteness.hasAccess(page)) {
+        if (!checkerPoliteness.hasAccess(page) ||
+            seenPages.contains(page.toString())) {
             return;
         }
+        seenPages.add(page.toString());
 
         if (hostToPages.size() > MAX_QUEUE_SIZE) {
             cacher.dumpPage(page);
@@ -71,8 +76,8 @@ public class UrlTimedQueue implements UrlContainer {
         }
 
         final String host = page.getHost();
+        checkerPoliteness.addHost(host);
         if (!hostToPages.containsKey(host)) {
-            checkerPoliteness.addHost(host);
             Queue<Page> queue = new ArrayDeque<>();
             queue.add(page);
             hostToPages.put(host, queue);
@@ -123,28 +128,47 @@ public class UrlTimedQueue implements UrlContainer {
                     throw new RuntimeException(e);
                 }
             });
+
+            dataOutputStream.writeInt(seenPages.size());
+            seenPages.forEach(page -> {
+                try {
+                    writeString(dataOutputStream, page);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
         } catch (IOException e) {
             LOGGER.error(e.toString(), e);
         }
     }
 
     private void startFromDump(@NotNull String queueFile) {
+        if (!Files.exists(Paths.get(queueFile))) {
+            return;
+        }
+
         try (DataInputStream dataInputStream = new DataInputStream(new FileInputStream(queueFile))) {
             final int hashMapSize = dataInputStream.readInt();
 
             for (int i = 0; i < hashMapSize; i++) {
                 String host = readString(dataInputStream);
+                if (!hostToPages.containsKey(host)) {
+                    hostToPages.put(host, new ArrayDeque<>());
+                }
 
                 int length = dataInputStream.readInt();
-                Queue<Page> pages = new ArrayDeque<>(length);
                 for (int j = 0; j < length; j++) {
                     String url = readString(dataInputStream);
                     String baseUrl = readString(dataInputStream);
 
-                    pages.add(new Page(new URL(url), new URL(baseUrl)));
+                    addUrl(new Page(new URL(url), new URL(baseUrl)));
                 }
+            }
 
-                hostToPages.put(host, pages);
+            final int seenPagesSize = dataInputStream.readInt();
+            for (int i = 0; i < seenPagesSize; i++) {
+                seenPages.add(readString(dataInputStream));
             }
         } catch (IOException | URISyntaxException e) {
             LOGGER.warn(e.toString());
@@ -158,13 +182,23 @@ public class UrlTimedQueue implements UrlContainer {
         private Path QUEUE_CACHE_FILE = Paths.get(PATH_TO_RESOURCES + "queue_cache.txt");
         private Path TMP_FILE = Paths.get(PATH_TO_RESOURCES + "queue_tmp.txt");
 
+        {
+            if (!Files.exists(QUEUE_CACHE_FILE)) {
+                try {
+                    Files.createFile(QUEUE_CACHE_FILE);
+                } catch (IOException e) {
+                    LOGGER.error(e.toString(), e);
+                }
+            }
+        }
+
         @Override
         public void run() {
             while (true) {
                 synchronized (queue) {
                     while (size.get() < CACHE_QUEUE_SIZE) {
                         try {
-                            wait();
+                            queue.wait();
                         } catch (InterruptedException e) {
                             LOGGER.info("Queue cacher has interrupted.");
                             return;
@@ -187,7 +221,7 @@ public class UrlTimedQueue implements UrlContainer {
 
         Stream<Page> getPages() {
             try {
-                Files.write(TMP_FILE, "".getBytes(), StandardOpenOption.WRITE);
+                Files.write(TMP_FILE, "".getBytes(), WRITE);
 
                 final long length = Files.lines(QUEUE_CACHE_FILE).count();
 
@@ -234,7 +268,7 @@ public class UrlTimedQueue implements UrlContainer {
 
             if (size.incrementAndGet() >= CACHE_QUEUE_SIZE) {
                 synchronized (queue) {
-                    notify();
+                    queue.notify();
                 }
             }
         }

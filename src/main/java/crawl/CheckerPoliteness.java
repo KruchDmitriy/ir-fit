@@ -20,12 +20,12 @@ class CheckerPoliteness {
     private final HashMap<String, RobotsTxt> hostToRobots = new HashMap<>();
     private final HashMap<String, Integer> hostsDelay = new HashMap<>();
     private final LinkedHashMap<String, LocalDateTime> hostsLastQuery = new LinkedHashMap<>();
-    private static final int DEFAULT_DELAY = 500;
+    private static final int DEFAULT_DELAY = 1000;
     private static final int CONNECTION_TIMEOUT = 2000;
     private static final int CONNECTION_READ_TIMEOUT = 3000;
     private static final Logger LOGGER = Logger.getLogger(CheckerPoliteness.class);
 
-    public void addHost(String host) {
+    synchronized void addHost(String host) {
         if (hostsLastQuery.containsKey(host)) {
             return;
         }
@@ -34,10 +34,16 @@ class CheckerPoliteness {
         hostsDelay.put(host, getDelay(host));
     }
 
-    String getFirstFreeHost() {
+    synchronized void removeHost(String freeHost) {
+        hostsLastQuery.remove(freeHost);
+        hostsDelay.remove(freeHost);
+    }
+
+    synchronized String getFirstFreeHost() {
         for (Map.Entry<String, LocalDateTime> next: hostsLastQuery.entrySet()) {
             String host = next.getKey();
             if (LocalDateTime.now().compareTo(getLastUpdatePlusDelay(host)) > 0) {
+//                System.out.println(getLastUpdatePlusDelay(host));
                 hostsLastQuery.put(host, LocalDateTime.now());
                 return host;
             }
@@ -46,8 +52,32 @@ class CheckerPoliteness {
         return null;
     }
 
+    synchronized boolean hasAccess(Page page) {
+        final URL pageUrl = page.getUrl();
+        final RobotsTxt robotsTxt;
+        if (hostToRobots.containsKey(page.getHost())) {
+            robotsTxt = hostToRobots.get(page.getHost());
+        } else {
+            robotsTxt = getRobotsTxt(pageUrl.getProtocol(), pageUrl.getHost());
+            hostToRobots.put(page.getHost(), robotsTxt);
+        }
+
+        return robotsTxt == null ||
+                robotsTxt.query(Crawler.BOT_NAME, page.toString());
+    }
+
+    static boolean isGoodPage(Page page) throws NotValidUploadedException {
+        try {
+            RobotsMeta meta = getRobotsMeta(page.getHead());
+            return meta.canArchive && meta.canIndex && meta.canFollow;
+        } catch (IOException e) {
+            LOGGER.error(e.toString());
+            throw new RuntimeException(e);
+        }
+    }
+
     private LocalDateTime getLastUpdatePlusDelay(String host) {
-        return LocalDateTime.now().plusNanos(hostsDelay.get(host) * 1000);
+        return hostsLastQuery.get(host).plusNanos(hostsDelay.get(host) * 1_000_000);
     }
 
     /**
@@ -72,21 +102,6 @@ class CheckerPoliteness {
         return DEFAULT_DELAY;
     }
 
-    boolean hasAccess(Page page) {
-        final URL pageUrl = page.getUrl();
-        final RobotsTxt robotsTxt;
-        if (hostToRobots.containsKey(page.getHost())) {
-            robotsTxt = hostToRobots.get(page.getHost());
-        } else {
-            robotsTxt = getRobotsTxt(pageUrl.getProtocol(), pageUrl.getHost());
-            hostToRobots.put(page.getHost(), robotsTxt);
-        }
-
-        return robotsTxt == null ||
-                robotsTxt.query(Crawler.BOT_NAME, page.toString());
-    }
-
-
     private static RobotsMeta getRobotsMeta(Element head)
             throws IOException {
         final Elements elements = head
@@ -99,21 +114,11 @@ class CheckerPoliteness {
                 .flatMap(Arrays::stream)
                 .collect(Collectors.toSet());
 
-        boolean canIndex = !contents.contains("NOINDEX");
-        boolean canFollow = !contents.contains("NOFOLLOW");
-        boolean canArchive = !contents.contains("NOARCHIVE");
+        boolean canIndex = contents == null || !contents.contains("NOINDEX");
+        boolean canFollow = contents == null || !contents.contains("NOFOLLOW");
+        boolean canArchive = contents == null || !contents.contains("NOARCHIVE");
 
         return new RobotsMeta(canIndex, canFollow, canArchive);
-    }
-
-    static boolean isGoodPage(Page page) throws NotValidUploadedException {
-        try {
-            RobotsMeta meta = getRobotsMeta(page.getHead());
-            return meta.canArchive && meta.canIndex && meta.canFollow;
-        } catch (IOException e) {
-            LOGGER.error(e.toString());
-            throw new RuntimeException(e);
-        }
     }
 
     private static RobotsTxt getRobotsTxt(String protocol, String host) {

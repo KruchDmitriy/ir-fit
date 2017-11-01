@@ -32,6 +32,7 @@ public class Page {
     private LocalDateTime creationDate;
     private Element head;
     private Element body;
+    private String text;
     private boolean isValidUploaded = false;
 
     Page(URL url, URL baseUrl) throws URISyntaxException {
@@ -82,7 +83,11 @@ public class Page {
     }
 
     public String getText() throws NotValidUploadedException {
-        return Jsoup.parse(getBody()).text();
+        if (text == null) {
+            text = Jsoup.parse(getBody()).text();
+        }
+
+        return text;
     }
 
     @Override
@@ -109,7 +114,7 @@ public class Page {
                     } catch (URISyntaxException
                             | MalformedURLException
                             | UnsupportedEncodingException e) {
-                        LOGGER.warn("Bad page: " + e + "\n" + link);
+                        LOGGER.info("Bad page: " + e + "\n" + link);
                     }
 
                     return null;
@@ -155,7 +160,7 @@ public class Page {
             body = document.body();
             isValidUploaded = true;
         } catch (IOException e) {
-            LOGGER.error("Error while downloading page " + url.toString() + e);
+            LOGGER.info("Error while downloading page " + url.toString() + e);
             isValidUploaded = false;
         }
     }

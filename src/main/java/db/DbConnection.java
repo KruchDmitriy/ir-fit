@@ -1,5 +1,6 @@
 package db;
 
+import crawl.NotValidUploadedException;
 import crawl.Page;
 import db.readConfig.Config;
 import org.apache.log4j.Logger;
@@ -10,10 +11,8 @@ import java.io.*;
 import java.sql.*;
 
 public class DbConnection {
-
     private static final Logger LOGGER = Logger.getLogger(DbConnection.class);
     private static final String PATH_TO_RESOURCES = "src/main/resources/";
-    private static final String PATH = PATH_TO_RESOURCES + "documents/";
     private static final String PATH_TO_CONFIG = PATH_TO_RESOURCES + "db.cfg";
 
     private final Config config;
@@ -29,8 +28,17 @@ public class DbConnection {
         if (!createConnection()) {
             throw new RuntimeException("Database connection is not created");
         }
+    }
+
+    private void createTables() {
         createURLTable();
         createParentTable();
+        createProcedureGetId();
+    }
+
+    public static void main(String[] args) {
+        DbConnection connection = new DbConnection();
+        connection.createTables();
     }
 
     private boolean createConnection() {
@@ -55,9 +63,8 @@ public class DbConnection {
         return true;
     }
 
-    @Nullable
-    public int selectFromUrlByUrl(@NotNull String url) {
-        String sql = " { ? = call selectByUrl ( ? ) } ";
+    int selectFromUrlByUrl(@NotNull String url) {
+        String sql = " { ? = call getUrlId ( ? ) } ";
         try {
             return runExecuteSqlSelectQuery(sql, url);
         } catch (SQLException ex) {
@@ -66,9 +73,8 @@ public class DbConnection {
         }
     }
 
-    public boolean insertToUrlRow(@NotNull Page page, @NotNull String pathToFile) {
-
-        String sqlInsertToURL = " insert into url_dt " +
+    public boolean insertToUrlRow(@NotNull Page page, @NotNull String pathToFile) throws NotValidUploadedException {
+        String sqlInsertToURL = " insert into urls " +
                 "(url, source, source_hash, time_downloading) " +
                 "values (?, ?, ?, ? ) ";
 
@@ -82,7 +88,7 @@ public class DbConnection {
                 connection.prepareStatement(sqlInsertParent)) {
             statement.setString(1, page.getUrl().toString());
             statement.setString(2, pathToFile);
-            statement.setInt(3, page.hashCode());
+            statement.setString(3, page.hash());
             statement.setString(4, page.getCreationDate().toString());
 
             final int rows = statement.executeUpdate();
@@ -108,10 +114,11 @@ public class DbConnection {
             return true;
 
         } catch (SQLException ex) {
+            LOGGER.warn(ex.toString());
             try {
                 connection.rollback();
             } catch (SQLException e) {
-                LOGGER.info("rollback fail");
+                LOGGER.error("rollback fail");
             }
             LOGGER.debug(ex.getMessage());
             return false;
@@ -119,40 +126,60 @@ public class DbConnection {
     }
 
     private boolean createURLTable() {
-        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS url_dt (")
-                .append(" id serial PRIMARY KEY,\n")
-                .append(" url VARCHAR (10000) UNIQUE NOT NULL,\n")
-                .append(" created_on TIMESTAMP  DEFAULT NOW(),\n")
-                .append(" last_update TIMESTAMP   DEFAULT NOW(),\n")
-                .append(" source VARCHAR (10000) UNIQUE NOT NULL,\n")
-                .append(" source_hash Integer NOT NULL, \n ")
-                .append(" time_downloading TIMESTAMP NULL")
-                .append(");");
+        String createUrl = "CREATE TABLE IF NOT EXISTS urls (" +
+                " id serial PRIMARY KEY,\n" +
+                " url VARCHAR (10000) UNIQUE NOT NULL,\n" +
+                " created_on TIMESTAMP  DEFAULT NOW(),\n" +
+                " last_update TIMESTAMP   DEFAULT NOW(),\n" +
+                " source VARCHAR (10000) UNIQUE NOT NULL,\n" +
+                " source_hash VARCHAR(10000) UNIQUE NOT NULL, \n " +
+                " time_downloading VARCHAR(100) NULL" +
+                ");";
+
+        String insertBaseUrl = "INSERT INTO urls " +
+                "(url, source, source_hash) " +
+                "values ('http://www.google.com/', 'www.google.com', '0')";
         try {
-            runExecuteSqlQuery(sql.toString());
+            runExecuteSqlQuery(createUrl);
+            runExecuteSqlQuery(insertBaseUrl);
             LOGGER.debug("SUCCESS : create url table");
             return true;
 
-        } catch (SQLException ex) {
-            LOGGER.warn(ex.getMessage());
+        } catch (SQLException e) {
+            LOGGER.warn(e.getMessage());
             try {
                 connection.rollback();
-            } catch (SQLException e) {
+            } catch (SQLException ex) {
                 LOGGER.info("rollback error");
             }
         }
         return false;
     }
 
-    private boolean createParentTable() {
-        StringBuilder sql = new StringBuilder()
-                .append(" create table IF NOT EXISTS parent_url (")
-                .append(" id serial PRIMARY KEY, \n ")
-                .append(" url_id integer REFERENCES url (id), \n")
-                .append(" parent_id integer REFERENCES url(id) \n")
-                .append(");");
+    private void createProcedureGetId() {
+        String query = "CREATE OR REPLACE FUNCTION getUrlId(curUrl VARCHAR) RETURNS INT\n" +
+                "AS $getUrlId$ DECLARE result INT;\n" +
+                "BEGIN\n" +
+                "  SELECT id INTO result FROM urls WHERE url = curUrl;\n" +
+                "  RETURN result;\n" +
+                "END;\n" +
+                "$getUrlId$ LANGUAGE plpgsql;";
         try {
-            runExecuteSqlQuery(sql.toString());
+            runExecuteSqlQuery(query);
+            LOGGER.debug("SUCCESS: create getId procedure");
+        } catch (SQLException e) {
+            LOGGER.error(e.toString(), e);
+        }
+    }
+
+    private boolean createParentTable() {
+        String sql = " create table IF NOT EXISTS parent_url (" +
+                " id serial PRIMARY KEY, \n " +
+                " url_id integer REFERENCES urls(id), \n" +
+                " parent_id integer REFERENCES urls(id) \n" +
+                ");";
+        try {
+            runExecuteSqlQuery(sql);
             LOGGER.debug("SUCCESS : create parent_url table");
             return true;
         } catch (SQLException ex) {
@@ -174,9 +201,7 @@ public class DbConnection {
         }
     }
 
-    @Nullable
-    private int
-    runExecuteSqlSelectQuery(@NotNull String sql, @NotNull String url) throws SQLException {
+    private int runExecuteSqlSelectQuery(@NotNull String sql, @NotNull String url) throws SQLException {
         CallableStatement statement = connection.prepareCall(sql);
         statement.registerOutParameter(1, Types.INTEGER);
         statement.setString(2,  url);

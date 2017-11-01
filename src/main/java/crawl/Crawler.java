@@ -28,7 +28,7 @@ public class Crawler {
     private static final int CONNECTION_TIMEOUT = 3000;
 
     private final HashSet<String> pageHashCodes = new HashSet<>();
-    private static final String PATH_TO_HASH = PATH_TO_RESOURCES + "hash.txt";
+    private static final String PATH_TO_HASH = PATH_TO_RESOURCES + "hash.dump";
 
     private final Thread[] workers;
     private final UrlContainer urlContainer;
@@ -37,7 +37,6 @@ public class Crawler {
     public Crawler() {
         this(DEFAULT_NUM_WORKERS);
     }
-
 
     public Crawler(int numWorkers) {
         workers = new Thread[numWorkers];
@@ -100,6 +99,10 @@ public class Crawler {
     }
 
     private void readDump() {
+        if (!Files.exists(Paths.get(PATH_TO_HASH))) {
+            return;
+        }
+
         try (DataInputStream hashDataInputStream = new DataInputStream(new FileInputStream(PATH_TO_HASH))) {
             final int hashSize = hashDataInputStream.readInt();
             for (int i = 0; i < hashSize; i++) {
@@ -116,17 +119,17 @@ public class Crawler {
         public void run() {
             while (!Thread.currentThread().isInterrupted()) {
                 Page currentPage = urlContainer.getUrl();
-                LOGGER.info("Parsing page " + currentPage);
+                LOGGER.warn("Parsing page " + currentPage);
                 try {
-                    if (!SearchManager.isGoodPage(currentPage)
-                        || !CheckerPoliteness.isGoodPage(currentPage)) {
-                        LOGGER.info("Bad page!");
+                    if (!CheckerPoliteness.isGoodPage(currentPage)
+                        || !SearchManager.isGoodPage(currentPage)) {
+                        LOGGER.warn("Bad page! Url: " + currentPage.toString());
                         continue;
                     }
 
                     final String hash = currentPage.hash();
                     if (pageHashCodes.contains(hash)) {
-                        LOGGER.info("Hash already was!");
+                        LOGGER.warn("Hash already was! Url: " + currentPage.toString());
                         continue;
                     }
 
@@ -151,10 +154,10 @@ public class Crawler {
         final String pathToText = PATH_TO_TEXTS + fileName;
 
         try {
-            Files.write(Paths.get(pathToDocument), page.getBody().getBytes(), StandardOpenOption.WRITE);
-            Files.write(Paths.get(pathToText), page.getText().getBytes(), StandardOpenOption.WRITE);
+            Files.write(Paths.get(pathToDocument), page.getBody().getBytes(), StandardOpenOption.CREATE_NEW);
+            Files.write(Paths.get(pathToText), page.getText().getBytes(), StandardOpenOption.CREATE_NEW);
         } catch (IOException e) {
-            LOGGER.error(e.toString(), e);
+            LOGGER.warn(e.toString(), e);
         }
 
         return fileName;

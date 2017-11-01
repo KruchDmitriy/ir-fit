@@ -3,5 +3,4 @@
 log/
 target/
 src/main/resources/documents/*
-src/main/resources/existsURL.txt
-src/main/resources/queue.txt
+src/main/resources/*.dump
