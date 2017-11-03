@@ -63,7 +63,6 @@ public class Utils {
                 .map(s -> s.split("\\s+"))
                 .flatMap(Arrays::stream);
     }
-
     public static Map<String, Long> createFeqMap(Stream<String> stringStream) {
         return stringStream.parallel()
                 .map(CharSequence::toString)
