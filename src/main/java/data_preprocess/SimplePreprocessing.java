@@ -1,27 +1,22 @@
 package data_preprocess;
 
+import data_preprocess.utils.Utils;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 
 public class SimplePreprocessing {
-    private static final Logger LOGGER = Logger.getLogger(SimplePreprocessing.class);
 
-    private final String directory;
-    private final String outDirectory;
-
-    public SimplePreprocessing(String directory, String outDirectory) {
-        this.directory = directory;
-        this.outDirectory = outDirectory;
-    }
-
-    public void fileToLowerCase(final @NotNull String fileName, final @NotNull String outFile) {
-        try (Stream<String> stream = Files.lines(Paths.get(fileName));
+    private static void fileToLowerCase(final @NotNull Path fileName, final @NotNull String outFile) {
+        try (Stream<String> stream = Files.lines(fileName);
              PrintWriter writer = new PrintWriter(outFile)) {
             stream.parallel()
                     .map(String::toLowerCase)
@@ -32,9 +27,23 @@ public class SimplePreprocessing {
         }
     }
 
-    private static String processWord(final @NotNull String str) {
-        return str.replaceAll("\\p{Punct}+", "");
+    public static void simplProcAllFilesInDir(String directory, String outDirectory) {
+        List<Path> paths = Utils.getAllFiles(Paths.get(directory));
+        paths.stream().parallel()
+                .forEach(path -> {
+                    String fileName = getLast(Arrays.asList(path.toString().split("/")));
+                    fileToLowerCase(path, outDirectory + fileName);
+                }
+
+        );
     }
 
+    private static String processWord(final @NotNull String str) {
+        return str.replaceAll("\\p{Punct}+", " ");
+    }
+
+    private static <T> T getLast(List<T> list) {
+        return list != null && !list.isEmpty() ? list.get(list.size() - 1) : null;
+    }
 }
 

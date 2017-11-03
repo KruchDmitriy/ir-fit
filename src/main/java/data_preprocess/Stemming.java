@@ -22,7 +22,7 @@ public class Stemming {
     public void runStemming() {
         SnowballStemmer stemmer = new SnowballStemmer(SnowballStemmer.ALGORITHM.RUSSIAN);
         try {
-            Stream<String> stringStream = Utils.readWords(Paths.get("../ir-fit-data/texts/"));
+            Stream<String> stringStream = Utils.readWords(Paths.get("../ir-fit-data/fuck/"));
 //                    .filter(s -> !s.matches("^\\s*([0-9]+)\\s*"));
 
             strToFrequency = stringStream

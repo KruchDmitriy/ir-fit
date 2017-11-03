@@ -24,6 +24,7 @@ class CheckerPoliteness {
     private static final int CONNECTION_TIMEOUT = 2000;
     private static final int CONNECTION_READ_TIMEOUT = 3000;
     private static final Logger LOGGER = Logger.getLogger(CheckerPoliteness.class);
+    private static final Random rng = new Random();
 
     synchronized void addHost(String host) {
         if (hostsLastQuery.containsKey(host)) {
@@ -39,11 +40,14 @@ class CheckerPoliteness {
         hostsDelay.remove(freeHost);
     }
 
-    synchronized String getFirstFreeHost() {
+    synchronized String getFreeHost() {
         for (Map.Entry<String, LocalDateTime> next: hostsLastQuery.entrySet()) {
             String host = next.getKey();
             if (LocalDateTime.now().compareTo(getLastUpdatePlusDelay(host)) > 0) {
-//                System.out.println(getLastUpdatePlusDelay(host));
+                if (rng.nextInt(10) < 7) {
+                    continue;
+                }
+
                 hostsLastQuery.put(host, LocalDateTime.now());
                 return host;
             }

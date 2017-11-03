@@ -43,7 +43,7 @@ public class UrlTimedQueue implements UrlContainer {
         }
 
         while (true) {
-            String freeHost = checkerPoliteness.getFirstFreeHost();
+            String freeHost = checkerPoliteness.getFreeHost();
             if (freeHost == null) {
                 try {
                     Thread.sleep(300);
