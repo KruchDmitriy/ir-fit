@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class SimplePreprocessing {
-
     private static void fileToLowerCase(final @NotNull Path fileName, final @NotNull String outFile) {
         try (Stream<String> stream = Files.lines(fileName);
              PrintWriter writer = new PrintWriter(outFile)) {
@@ -27,14 +26,13 @@ public class SimplePreprocessing {
         }
     }
 
-    public static void simplProcAllFilesInDir(String directory, String outDirectory) {
+    public static void simpleProcAllFilesInDir(String directory, String outDirectory) {
         List<Path> paths = Utils.getAllFiles(Paths.get(directory));
         paths.stream().parallel()
                 .forEach(path -> {
-                    String fileName = getLast(Arrays.asList(path.toString().split("/")));
+                    String fileName = Utils.getLast(Arrays.asList(path.toString().split("/")));
                     fileToLowerCase(path, outDirectory + fileName);
                 }
-
         );
     }
 
@@ -42,8 +40,5 @@ public class SimplePreprocessing {
         return str.replaceAll("\\p{Punct}+", " ");
     }
 
-    private static <T> T getLast(List<T> list) {
-        return list != null && !list.isEmpty() ? list.get(list.size() - 1) : null;
-    }
 }
 

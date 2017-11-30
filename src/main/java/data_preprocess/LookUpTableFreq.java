@@ -2,9 +2,12 @@ package data_preprocess;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class LookUpTableFreq {
-    // file to freq word in this file
+    /**
+     * File to freq word in this file
+     */
     private Map<String, Long> fileToFreq = new HashMap<>();
 
     void addFreq(String file, Long freq) {
@@ -13,11 +16,8 @@ public class LookUpTableFreq {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        fileToFreq.forEach((fileName, freqWord) ->
-                builder
-                .append(fileName).append(":")
-                .append(freqWord).append(";"));
-        return builder.toString();
+        return fileToFreq.entrySet().stream()
+                .map(entry -> "\"" + entry.getKey() + "\":" + String.valueOf(entry.getValue()))
+                .collect(Collectors.joining(", ", "[", "]"));
     }
 }
