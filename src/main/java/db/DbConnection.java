@@ -36,6 +36,11 @@ public class DbConnection {
         createProcedureGetId();
     }
 
+    public void createTableForSection() {
+        createTypeSectionTable();
+        createUrlToSectionTable();
+    }
+
     public static void main(String[] args) {
         DbConnection connection = new DbConnection();
         connection.createTables();
@@ -71,6 +76,57 @@ public class DbConnection {
             LOGGER.warn(ex.getMessage());
             return -1;
         }
+    }
+
+    int selectFromUrlByPath(@NotNull String pathToFile) {
+        String sql = " { ? = call getUrlIdByFile ( ? ) } ";
+        try {
+            return runExecuteSqlSelectQuery(sql, pathToFile);
+        } catch (SQLException ex) {
+            LOGGER.warn(ex.getMessage());
+            return -1;
+        }
+    }
+
+    int selectFromTypeSectionByNameSection(@NotNull String sectionName) {
+        String sql = " { ? = call getSectionId ( ? ) } ";
+        try {
+            return runExecuteSqlSelectQuery(sql, sectionName);
+        } catch (SQLException ex) {
+            LOGGER.warn(ex.getMessage());
+            return -1;
+        }
+    }
+
+    public boolean insertTypeSection(@NotNull String typeSport) {
+        String sql = " insert into type_of_section " +
+                "(name_section) " +
+                "values (?) ";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, typeSport);
+            final int rows = statement.executeUpdate();
+            return true;
+        } catch (SQLException ex) {
+            LOGGER.debug(sql + " ERROR " );
+        }
+        return false;
+    }
+
+    public void insertTypeSectionForUrl(@NotNull String pathToFile, @NotNull String section) {
+        int idSection = selectFromTypeSectionByNameSection(section);
+        int idUrl = selectFromUrlByPath(pathToFile);
+
+        String sql = " insert into url_to_section " +
+                "(id_url, id_section) " +
+                "values (?, ? ) ";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, idUrl);
+            statement.setInt(2, idSection);
+            statement.executeUpdate();
+        } catch (SQLException ex) {
+            LOGGER.debug(sql + " ERROR " );
+        }
+
     }
 
     public boolean insertToUrlRow(@NotNull Page page, @NotNull String pathToFile) throws NotValidUploadedException {
@@ -193,6 +249,49 @@ public class DbConnection {
 
         return false;
     }
+
+
+    private boolean createTypeSectionTable() {
+        String sql = " create table IF NOT EXISTS type_of_section (" +
+                " id serial PRIMARY KEY, \n " +
+                " name_section VARCHAR (10000) UNIQUE NOT NULL, \n" +
+                ");";
+        try {
+            runExecuteSqlQuery(sql);
+            LOGGER.debug("SUCCESS : create type_of_section table");
+            return true;
+        } catch (SQLException ex) {
+            LOGGER.warn(ex.getMessage());
+            try {
+                connection.rollback();
+            } catch (SQLException e) {
+                LOGGER.info("rollback error");
+            }
+        }
+        return false;
+    }
+
+    private boolean createUrlToSectionTable() {
+        String sql = " create table IF NOT EXISTS url_to_section (" +
+                " id serial PRIMARY KEY, \n " +
+                " id)url integer REFERENCES urls(id), \n" +
+                " id_section integer REFERENCES type_of_section(id) \n" +
+                ");";
+        try {
+            runExecuteSqlQuery(sql);
+            LOGGER.debug("SUCCESS : create url_to_section table");
+            return true;
+        } catch (SQLException ex) {
+            LOGGER.warn(ex.getMessage());
+            try {
+                connection.rollback();
+            } catch (SQLException e) {
+                LOGGER.info("rollback error");
+            }
+        }
+        return false;
+    }
+
 
     private void runExecuteSqlQuery(@NotNull String sql) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {

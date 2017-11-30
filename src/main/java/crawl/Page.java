@@ -1,6 +1,6 @@
 package crawl;
 
-import org.apache.commons.codec.digest.DigestUtils;
+//import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.log4j.Logger;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -139,7 +139,8 @@ public class Page {
     }
 
     public String hash() throws NotValidUploadedException {
-        return DigestUtils.md5Hex(getText());
+//        return DigestUtils.md5Hex(getText());
+        return null;
     }
 
     public URI getUri() {
