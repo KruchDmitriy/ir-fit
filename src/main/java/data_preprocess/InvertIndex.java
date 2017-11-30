@@ -4,10 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import data_preprocess.utils.Utils;
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,6 +43,18 @@ class InvertIndex {
 //        createWordToPositionInFiles();
         LOGGER.debug("creating index: word to freq in each file");
         createWordsToFreqInFiles();
+    }
+
+    public static ArrayList getNameArray(@NotNull String
+                                                         pathToIndexFile) {
+
+        try(Reader reader = new BufferedReader(new FileReader(pathToIndexFile
+                ))) {
+            return GSON.fromJson(reader, ArrayList.class);
+        } catch ( IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private void createWordsToFreqInFiles() throws IOException {

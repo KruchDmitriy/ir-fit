@@ -4,7 +4,6 @@ import data_preprocess.utils.Utils;
 import db.DbConnection;
 import org.apache.log4j.Logger;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,13 +19,13 @@ public class CreateTypeOfSectionTable {
     private final DbConnection connection;
     private List<String> section;
 
-    public CreateTypeOfSectionTable() {
+    private CreateTypeOfSectionTable() {
         section = new ArrayList<>();
         connection = new DbConnection();
         connection.createTableForSection();
     }
 
-    public void createTypeOfSectionTable() {
+    private void createTypeOfSectionTable() {
         try {
             Stream<String> lines = Files.lines((Paths.get(TYPE_SPORT)));
             lines.forEach(connection::insertTypeSection);
@@ -44,7 +43,7 @@ public class CreateTypeOfSectionTable {
         }
     }
 
-    public void parseText() {
+    private void parseText() {
         for (Path path : Utils.getAllFiles(Paths.get("../ir-fit/text"))) {
             try {
                 Stream<String> lines = Files.lines((Paths.get(TYPE_SPORT)));
