@@ -2,12 +2,10 @@ package data_preprocess;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.stream.JsonWriter;
 import data_preprocess.utils.Utils;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedWriter;
-import java.io.FileDescriptor;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,7 +14,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -81,10 +78,13 @@ class InvertIndex {
     }
 
     private void dumpWordToFreqIndex() throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_INDEX_FREQS));
-        GSON.toJson(wordToFreqFile, writer);
-        writer = new BufferedWriter(new FileWriter(PATH_INDEX_FILES));
-        GSON.toJson(listFiles, writer);
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_INDEX_FREQS))) {
+            GSON.toJson(wordToFreqFile, writer);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_INDEX_FILES))) {
+            GSON.toJson(listFiles, writer);
+        }
     }
 
     private void createMapWithWords() {
@@ -101,8 +101,9 @@ class InvertIndex {
     }
 
     private void dumpWordToPosIndex(String indexFile) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_INDEX_FILES));
-        GSON.toJson(wordToPosInFile, writer);
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_INDEX_FILES))) {
+            GSON.toJson(wordToPosInFile, writer);
+        }
     }
 
     private static List<Integer> findStartIndexesForKeyword(String keyword,
