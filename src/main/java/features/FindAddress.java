@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,6 +23,8 @@ class FindAddress {
 
     private static final String pathToGrade = "./src/main/resources/grade.txt";
     private static final String pathToDocument = "../../../documents_small/";
+    private static final String pathToNameDocument =
+            "../../../index_file.json";
 
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>>
             // grade name to List from (name_doc, freq_grade_in_document)
@@ -53,6 +56,10 @@ class FindAddress {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void loadArrayWithNameFiles() {
+
     }
 
     private void loadAllGrade() {
