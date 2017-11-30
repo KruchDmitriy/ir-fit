@@ -1,0 +1,35 @@
+{
+  "лауреат": {},
+  "чемпион России": {
+    "../../../documents_small/http:__abakan.kartasporta.ru_partners_": 1
+  },
+  "кратный": {
+    "../../../documents_small/http:__abakan.kartasporta.ru_partners_": 3
+  },
+  "МС": {
+    "../../../documents_small/http:__abakan.kartasporta.ru_sport_basketbol_": 1,
+    "../../../documents_small/http:__4810.ru_deti_climbing_school": 1,
+    "../../../documents_small/http:__4810.ru_trenera": 2
+  },
+  "мастер спорта международного класса": {},
+  "призер": {
+    "../../../documents_small/http:__4810.ru_deti_climbing_school": 2,
+    "../../../documents_small/http:__abakan.kartasporta.ru_partners_": 1
+  },
+  "чемпион Европы": {
+    "../../../documents_small/http:__abakan.kartasporta.ru_partners_": 1
+  },
+  "МСМК": {},
+  "чемпион мира": {},
+  "призёр": {
+    "../../../documents_small/http:__4810.ru_deti_climbing_school": 1
+  },
+  "рекорд": {},
+  "мастре спорта": {},
+  "рекордсмер": {},
+  "ЗМС": {},
+  "победитель": {
+    "../../../documents_small/http:__4810.ru_trenera": 1
+  },
+  "заслуженный мастер смопра": {}
+}
