@@ -4,17 +4,19 @@ import java.nio.file.Path;
 import java.util.*;
 
 public class LookUpTable {
-    // file name to list index word in this file
-    private Map<String, List<Integer>> fileToListPositionWords = new HashMap<>();
+    /**
+     * File name to list index word in this file
+      */
+    private Map<Integer, List<Integer>> fileToListPositionWords = new HashMap<>();
 
-    void addListPositionInFile(String fileName, List<Integer> integerList) {
-        fileToListPositionWords.get(fileName).addAll(integerList);
+    void addListPositionInFile(Integer fileId, List<Integer> integerList) {
+        fileToListPositionWords.get(fileId).addAll(integerList);
     }
 
-    void initFileInMap(List<Path> paths) {
-        paths.forEach(path ->
-                fileToListPositionWords.put(path.toString(), new ArrayList<>()));
-    }
+//    void initFileInMap(List<Path> paths) {
+//        paths.forEach(path ->
+//                fileToListPositionWords.put(path.toString(), new ArrayList<>()));
+//    }
 
     @Override
     public String toString() {

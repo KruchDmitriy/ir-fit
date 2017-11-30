@@ -1,17 +1,16 @@
 package data_preprocess;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class LookUpTableFreq {
     /**
      * File to freq word in this file
      */
-    private Map<String, Long> fileToFreq = new HashMap<>();
+    private Map<Integer, Long> fileToFreq = new HashMap<>();
 
-    void addFreq(String file, Long freq) {
-        fileToFreq.put(file, freq);
+    void addFreq(Integer fileId, Long freq) {
+        fileToFreq.put(fileId, freq);
     }
 
     @Override

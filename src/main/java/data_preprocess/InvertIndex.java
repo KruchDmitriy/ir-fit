@@ -14,21 +14,25 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 class InvertIndex {
     private static final Logger LOGGER = Logger.getLogger(InvertIndex.class);
     private static final String IR_FIT_DATA_INDEX = "../ir-fit-data/index/";
+    private static final String PATH_INDEX_FILES = IR_FIT_DATA_INDEX + "index_files.json";
     private static final String PATH_INDEX_FREQS = IR_FIT_DATA_INDEX + "index_freqs.json";
     private static final String PATH_INDEX_FILE_POSITIONS = IR_FIT_DATA_INDEX + "index_file_pos.json";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private final Path pathToDir;
-    private List<String> uniqueWords = new ArrayList<>();
 
+    private Map<String, Integer> fileIndex = new ConcurrentHashMap<>();
+    private List<String> listFiles = Collections.synchronizedList(new ArrayList<>());
     private SortedMap<String, LookUpTable> wordToPosInFile = Collections.synchronizedSortedMap(new TreeMap<>());
     private SortedMap<String, LookUpTableFreq> wordToFreqFile = Collections.synchronizedSortedMap(new TreeMap<>());
 
@@ -51,11 +55,16 @@ class InvertIndex {
             LOGGER.warn("List of all files is empty");
         }
 
-        files.stream().parallel()
-//                .map(Utils::readFile)
-//                .map(Utils::createFreqMap)
-//                .forEach(map -> map.forEach());
+        AtomicInteger[] counter = { new AtomicInteger() };
 
+        files.stream().parallel()
+            .peek(file -> {
+                String fileName = file.toString();
+                if (!fileIndex.containsKey(fileName)) {
+                    fileIndex.put(fileName, counter[0].getAndIncrement());
+                    listFiles.add(fileName);
+                }
+            })
             .forEach(file -> {
                 Stream<String> wordInFile = Utils.readFile(file);
 
@@ -63,17 +72,19 @@ class InvertIndex {
 
                 fileFreqMap.forEach(
                         (word, freq) -> wordToFreqFile.get(word)
-                                .addFreq(file.toString(), freq)
+                                .addFreq(fileIndex.get(file.toString()), freq)
                 );
             }
         );
 
-        dumpWordToFreqIndex(PATH_INDEX_FREQS);
+        dumpWordToFreqIndex();
     }
 
-    private void dumpWordToFreqIndex(String indexFile) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(indexFile));
+    private void dumpWordToFreqIndex() throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_INDEX_FREQS));
         GSON.toJson(wordToFreqFile, writer);
+        writer = new BufferedWriter(new FileWriter(PATH_INDEX_FILES));
+        GSON.toJson(listFiles, writer);
     }
 
     private void createMapWithWords() {
@@ -90,8 +101,8 @@ class InvertIndex {
     }
 
     private void dumpWordToPosIndex(String indexFile) throws IOException {
-        String json = GSON.toJson(wordToPosInFile);
-        Files.write(Paths.get(indexFile), json.getBytes());
+        BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_INDEX_FILES));
+        GSON.toJson(wordToPosInFile, writer);
     }
 
     private static List<Integer> findStartIndexesForKeyword(String keyword,
