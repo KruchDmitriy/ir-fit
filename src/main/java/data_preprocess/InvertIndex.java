@@ -17,7 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-class InvertIndex {
+public class InvertIndex {
     private static final Logger LOGGER = Logger.getLogger(InvertIndex.class);
     private static final String IR_FIT_DATA_INDEX = "../ir-fit-data/index/";
     private static final String PATH_INDEX_FILES = IR_FIT_DATA_INDEX + "index_files.json";

@@ -2,6 +2,7 @@ package features;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import data_preprocess.InvertIndex;
 import data_preprocess.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,6 +27,7 @@ class FindAddress {
     private static final String pathToNameDocument =
             "../../../index_file.json";
 
+
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>>
             // grade name to List from (name_doc, freq_grade_in_document)
             gradeToMapFromPathsToFreq = new ConcurrentHashMap<>();
@@ -33,6 +35,11 @@ class FindAddress {
     private List<String> readingGradeByLine = new LinkedList<>();
 
     private ConcurrentHashMap<String, Pattern> compilePattern = new
+            ConcurrentHashMap<>();
+
+
+    private ArrayList nameDocument = new ArrayList<>();
+    private ConcurrentHashMap<String, Integer> nameDocumentToIndex = new
             ConcurrentHashMap<>();
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -45,6 +52,7 @@ class FindAddress {
 
 
     void saveGrade() {
+        loadArrayWithNameFiles();
         loadAllGrade();
         initCompilePattern();
         initMapWithGrade();
@@ -59,7 +67,14 @@ class FindAddress {
     }
 
     private void loadArrayWithNameFiles() {
-
+        nameDocument = InvertIndex.getNameArray(pathToNameDocument);
+        if (nameDocument == null){
+            System.out.println("");
+            return;
+        }
+        for (int idx = 0; idx < nameDocument.size(); idx++) {
+             nameDocumentToIndex.put(nameDocument.get(idx).toString(), idx);
+        }
     }
 
     private void loadAllGrade() {
