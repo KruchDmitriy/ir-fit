@@ -14,7 +14,7 @@ public class LookUpTableFreq {
     }
 
     int getFreq(Integer fileId) {
-        return fileToFreq.get(fileId);
+        return fileToFreq.getOrDefault(fileId, 0);
     }
 
     Set<Integer> getAllFiles() {

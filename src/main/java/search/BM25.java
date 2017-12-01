@@ -24,11 +24,12 @@ public class BM25 {
                               double docLength,
                               double queryFrequency,
                               double documentNumber) {
-        double K = k_1 * ((1 - b) + ((b * docLength) / averageDocumentLength));
-        double weight = ( ((k_1 + 1d) * tf) / (K + tf) );
-        weight = weight * ( ((k_3 + 1) * queryFrequency) / (k_3 + queryFrequency) );
+        double K = k_1 * ((1. - b) + ((b * docLength) / averageDocumentLength));
+        double weight = ( ((k_1 + 1.) * tf) / (K + tf) );
+        weight *= ( ((k_3 + 1.) * queryFrequency) / (k_3 + queryFrequency) );
 
-        double idf = Math.log((numberOfDocuments - documentNumber + 0.5d) / (documentNumber + 0.5d));
+//        double idf = Math.log((numberOfDocuments - documentNumber + 0.5) / (documentNumber + 0.5));
+        double idf = Math.log(numberOfDocuments / documentNumber);
         return weight * idf;
     }
 }

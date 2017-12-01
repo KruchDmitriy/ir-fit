@@ -6,4 +6,9 @@ public class Document {
     public Document(String address) {
         this.address = address;
     }
+
+    @Override
+    public String toString() {
+        return address;
+    }
 }

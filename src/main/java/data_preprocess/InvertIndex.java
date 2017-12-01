@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class InvertIndex {
@@ -96,9 +97,15 @@ public class InvertIndex {
         return invertIndex;
     }
 
+    public Set<Integer> getAllDocumentsIds() {
+        return IntStream.rangeClosed(0, listFiles.size() - 1)
+                .boxed()
+                .collect(Collectors.toSet());
+    }
+
     public double termFrequency(@NotNull String term, int documentId) {
         final LookUpTableFreq tableFreq = wordToFreqFile.get(term);
-        return tableFreq.getFreq(documentId) / fileLength.get(documentId);
+        return tableFreq.getFreq(documentId) / (double) fileLength.get(documentId);
     }
 
     public int documentsNumber(@NotNull String term) {

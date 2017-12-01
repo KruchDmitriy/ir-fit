@@ -70,8 +70,12 @@ public class Utils {
     }
 
     public static Map<String, Long> createFreqMap(Stream<String> streamOfWords) {
+        return streamOfWords
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+    }
+
+    public static Map<String, Long> createFreqMapParallel(Stream<String> streamOfWords) {
         return streamOfWords.parallel()
-                .map(CharSequence::toString)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
 

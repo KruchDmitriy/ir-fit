@@ -20,11 +20,13 @@ public class Search {
     }
 
     public List<Document> process(@NotNull String query) {
-        Map<String, Long> queryFreqMap = Utils.createFreqMap(Stemming.processWords(Utils.splitToWords(query)));
+        final Map<String, Long> queryFreqMap = Utils.createFreqMap(Stemming.processWords(Utils.splitToWords(query)));
 
-        List<Integer> documents = new ArrayList<>();
+        final Set<Integer> documentsSet = invertIndex.getAllDocumentsIds();
         queryFreqMap.forEach((term, queryFrequency) ->
-                documents.addAll(invertIndex.getDocumentsIdContainTerm(term)));
+                documentsSet.retainAll(invertIndex.getDocumentsIdContainTerm(term)));
+
+        final List<Integer> documents = new ArrayList<>(documentsSet);
 
         final double[] scores = new double[documents.size()];
         for (int i = 0; i < documents.size(); i++) {
@@ -38,8 +40,12 @@ public class Search {
             });
         }
 
-        documents.sort(Comparator.comparingDouble(doc -> scores[doc]));
-        return documents.stream()
+        final SortedMap<Double, Integer> ranging = new TreeMap<>((o1, o2) -> -Double.compare(o1, o2));
+        for (int i = 0; i < scores.length; i++) {
+            ranging.put(scores[i], documents.get(i));
+        }
+
+        return ranging.values().stream()
                 .map(invertIndex::documentById)
                 .map(Document::new)
                 .collect(Collectors.toList());
@@ -48,17 +54,18 @@ public class Search {
     public static void main(String[] args) throws IOException {
         final Search search = new Search();
         final Scanner scanner = new Scanner(System.in);
+        System.out.println("ready");
 
         while (true) {
-            String query = scanner.next();
+            String query = scanner.nextLine();
             if (query.equals("exit")) {
                 return;
             }
-            List<Document> documents = search.process(query);
+            final List<Document> documents = search.process(query);
             System.out.println("\n");
-            System.out.println(documents.get(0));
-            System.out.println("\n");
-            System.out.println(documents.get(1));
+            for (int i = 0; i < Math.min(documents.size(), 10); i++) {
+                System.out.println(documents.get(i));
+            }
             System.out.println("\n");
         }
     }
