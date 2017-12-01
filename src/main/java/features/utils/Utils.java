@@ -3,11 +3,9 @@ package features.utils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import data_preprocess.InvertIndex;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
+import java.io.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -48,6 +46,13 @@ public class Utils {
             GSON.toJson(o, writer);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static <T> T readJsonFile(@NotNull String pathToJsonFile,
+                                     Class<T> returnObjClass) throws IOException {
+        try (Reader reader = new BufferedReader(new FileReader(pathToJsonFile))) {
+            return GSON.fromJson(reader, returnObjClass);
         }
     }
 }
