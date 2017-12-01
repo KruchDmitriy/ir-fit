@@ -11,6 +11,7 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +29,7 @@ public class FindGrade {
 
     private ConcurrentHashMap<String, ConcurrentHashMap<Integer, Integer>>
             // grade name to List from (id_name_doc, freq_grade_in_document)
-            gradeToMapFromPathsToFreq = new ConcurrentHashMap<>();
+            gradeNameToMapFromIdxDocToFreqGrade = new ConcurrentHashMap<>();
 
     private List<String> readingGradeByLine = new LinkedList<>();
 
@@ -49,16 +50,17 @@ public class FindGrade {
 
     public void loadGradeFromJson() {
         try {
-            gradeToMapFromPathsToFreq = features.utils.Utils.readJsonFile
-                    (outFileWithGrade, TYPE_GRADE_MAP);
+            gradeNameToMapFromIdxDocToFreqGrade =
+                    features.utils.Utils.readJsonFile (outFileWithGrade,
+                            TYPE_GRADE_MAP);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public ConcurrentHashMap<String,
-            ConcurrentHashMap<Integer, Integer>> getGradeToMapFromPathsToFreq() {
-        return gradeToMapFromPathsToFreq;
+            ConcurrentHashMap<Integer, Integer>> getGradeNameToMapFromIdxDocToFreqGrade() {
+        return gradeNameToMapFromIdxDocToFreqGrade;
     }
 
     void saveGrade() throws IOException {
@@ -71,13 +73,36 @@ public class FindGrade {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter
                 (outFileWithGrade))) {
-            GSON.toJson(gradeToMapFromPathsToFreq, writer);
+            GSON.toJson(gradeNameToMapFromIdxDocToFreqGrade, writer);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void loadAllGrade() {
+
+    public List<String> getReadingGradeByLine() {
+        return readingGradeByLine;
+    }
+
+
+    public static ConcurrentHashMap<String, Double>
+    loadGradeFromFileWithStars() throws IOException {
+        ConcurrentHashMap<String, Double> gradeToStars = new
+                ConcurrentHashMap<>();
+        Path path = Paths.get(pathToGrade);
+        Files.readAllLines(path).forEach(line ->  {
+            String[] arrayNamesAndStars = line.split("->");
+
+            Double starsCount = Double.valueOf(arrayNamesAndStars[1]);
+            String[] nameGrade = arrayNamesAndStars[0].split(";");
+            Arrays.asList(nameGrade).forEach(name -> gradeToStars.put
+                    (name.toLowerCase().replaceAll(" ", ""), starsCount));
+        });
+
+        return gradeToStars;
+    }
+
+    public void loadAllGrade() {
         try {
             Path path = Paths.get(pathToGrade);
             Files.readAllLines(path).stream()
@@ -96,7 +121,7 @@ public class FindGrade {
     }
 
     private void initMapWithGrade() {
-        readingGradeByLine.forEach(grade -> gradeToMapFromPathsToFreq.put(grade,
+        readingGradeByLine.forEach(grade -> gradeNameToMapFromIdxDocToFreqGrade.put(grade,
                 new ConcurrentHashMap<>()));
     }
 
@@ -114,7 +139,7 @@ public class FindGrade {
                 Matcher matcher = pattern.matcher(textFile);
                 final Integer freq = countMatches(matcher);
 
-                gradeToMapFromPathsToFreq.computeIfPresent(grade,
+                gradeNameToMapFromIdxDocToFreqGrade.computeIfPresent(grade,
                         (gradeStr, pathIntegerConcurrentHashMap) ->
                                 addToGradeMap(pathToFile, freq,
                                         pathIntegerConcurrentHashMap)
