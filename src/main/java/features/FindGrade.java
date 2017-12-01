@@ -61,7 +61,7 @@ public class FindGrade {
         return gradeToMapFromPathsToFreq;
     }
 
-    void saveGrade() {
+    void saveGrade() throws IOException {
         features.utils.Utils.loadArrayWithNameFiles();
         nameDocumentToIndex = features.utils.Utils.getNameDocumentToIndex();
         loadAllGrade();
@@ -76,7 +76,6 @@ public class FindGrade {
             e.printStackTrace();
         }
     }
-
 
     private void loadAllGrade() {
         try {

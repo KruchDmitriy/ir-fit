@@ -5,11 +5,8 @@ import opennlp.tools.stemmer.snowball.SnowballStemmer;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
@@ -19,14 +16,31 @@ import java.util.stream.Stream;
 public class Stemming {
     private static final Logger LOGGER = Logger.getLogger(Stemming.class);
     private Map<String, Long> strToFrequency = new HashMap<>();
+    private static final SnowballStemmer STEMMER = new SnowballStemmer(SnowballStemmer.ALGORITHM.RUSSIAN);
+    private static final Set<String> STOP_WORDS = new HashSet<>();
+    private static final String FILE_STOP_WORDS = "./src/main/resources/stop_words.txt";
 
-    public void runStemming(@NotNull String pathToPreprocessedTexts) {
-        SnowballStemmer stemmer = new SnowballStemmer(SnowballStemmer.ALGORITHM.RUSSIAN);
+    static {
+        try {
+            Files.lines(Paths.get(FILE_STOP_WORDS)).forEach(STOP_WORDS::add);
+        } catch (IOException e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+    }
+
+    public static Stream<String> processWords(@NotNull Stream<String> words) {
+        return words
+            .filter(word -> !STOP_WORDS.contains(word))
+            .map(STEMMER::stem)
+            .map(CharSequence::toString);
+    }
+
+    public void createWordFrequencyMap(@NotNull String pathToPreprocessedTexts) {
         try {
             Stream<String> stringStream = Utils.readWords(Paths.get(pathToPreprocessedTexts));
 
             strToFrequency = stringStream
-                    .map(stemmer::stem)
+                    .map(STEMMER::stem)
                     .map(CharSequence::toString)
                     .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
         } catch (IOException e) {
@@ -34,19 +48,12 @@ public class Stemming {
         }
     }
 
-    public void runStemmingByFile(@NotNull String pathToPreprocessedTexts) {
-        final SnowballStemmer stemmer = new SnowballStemmer(SnowballStemmer.ALGORITHM.RUSSIAN);
-        Utils.getAllFiles(Paths.get(pathToPreprocessedTexts)).forEach(path ->
-        {
+    public void runStemmingOnFiles(@NotNull String pathToPreprocessedTexts) {
+        Utils.getAllFiles(Paths.get(pathToPreprocessedTexts)).forEach(path -> {
             String fileName = Utils.getLast(Arrays.asList(path.toString().split("/")));
             try (PrintWriter writer = new PrintWriter(Utils.PATH_TO_STEMMED_TEXTS + fileName)){
-                Utils.readFile(path)
-                        .map(stemmer::stem).map(CharSequence::toString)
-                        .forEach(word -> {
-                            if (strToFrequency.get(word) < 570000) {
-                                writer.append(word).append(" ");
-                            }
-                        });
+                processWords(Utils.readWordsFromFile(path))
+                        .forEach(word -> writer.append(word).append(" "));
             } catch (IOException e) {
                 e.printStackTrace();
             }

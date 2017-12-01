@@ -5,29 +5,26 @@ import com.google.gson.GsonBuilder;
 import data_preprocess.InvertIndex;
 import org.jetbrains.annotations.NotNull;
 
+
 import java.io.*;
 import java.lang.reflect.Type;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Utils {
 
-    private static final String pathToNameDocument =
-            "../../../index_files.json";
-
+    private static final String pathToNameDocument = "../../../index_files.json";
     private static ConcurrentHashMap<String, Integer> nameDocumentToIndex = new
             ConcurrentHashMap<>();
 
-
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    public static void loadArrayWithNameFiles() {
-        List<String> nameDocument = null;
-        try {
-            nameDocument = InvertIndex.readFileIndex(pathToNameDocument);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public static void loadArrayWithNameFiles() throws IOException {
+        List<String> nameDocument = InvertIndex.readFileIndex(pathToNameDocument);
+
         if (nameDocument == null) {
             System.out.println(" document name not found ");
             return;

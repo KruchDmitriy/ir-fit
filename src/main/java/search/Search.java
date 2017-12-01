@@ -1,6 +1,7 @@
 package search;
 
 import data_preprocess.InvertIndex;
+import data_preprocess.Stemming;
 import data_preprocess.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,7 +20,7 @@ public class Search {
     }
 
     public List<Document> process(@NotNull String query) {
-        Map<String, Long> queryFreqMap = Utils.createFreqMap(Utils.splitToWords(query));
+        Map<String, Long> queryFreqMap = Utils.createFreqMap(Stemming.processWords(Utils.splitToWords(query)));
 
         List<Integer> documents = new ArrayList<>();
         queryFreqMap.forEach((term, queryFrequency) ->
