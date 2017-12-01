@@ -3,7 +3,11 @@ package features.utils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import data_preprocess.InvertIndex;
+import org.jetbrains.annotations.NotNull;
 
+
+import java.io.*;
+import java.lang.reflect.Type;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -37,6 +41,14 @@ public class Utils {
             GSON.toJson(o, writer);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static <T> T readJsonFile(@NotNull String pathToJsonFile,
+                                     Type returnObjClass)
+            throws IOException {
+        try (Reader reader = new BufferedReader(new FileReader(pathToJsonFile))) {
+            return GSON.fromJson(reader, returnObjClass);
         }
     }
 }

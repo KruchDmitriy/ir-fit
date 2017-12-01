@@ -2,33 +2,34 @@ package features;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import data_preprocess.InvertIndex;
+import com.google.gson.reflect.TypeToken;
 import data_preprocess.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-class FindGrade {
+public class FindGrade {
 
     private static final String pathToGrade = "./src/main/resources/grade.txt";
     private static final String pathToDocument = "../../../documents/";
 
     private static final String outFileWithGrade = "" +
-            "./src/main/resources/gradeFind.txt";
+            "./src/main/resources/gradeFind.json";
 
 
-    private final ConcurrentHashMap<String, ConcurrentHashMap<Integer, Integer>>
+    private ConcurrentHashMap<String, ConcurrentHashMap<Integer, Integer>>
             // grade name to List from (id_name_doc, freq_grade_in_document)
-            gradeToMapFromPathsToFreq = new ConcurrentHashMap<>();
+            gradeNameToMapFromIdxDocToFreqGrade = new ConcurrentHashMap<>();
 
     private List<String> readingGradeByLine = new LinkedList<>();
 
@@ -36,12 +37,31 @@ class FindGrade {
             ConcurrentHashMap<>();
 
 
+    private static final Type TYPE_GRADE_MAP =
+            new TypeToken<ConcurrentHashMap<String,
+                    ConcurrentHashMap<Integer, Integer>>>() {
+            }.getType();
+
     private ConcurrentHashMap<String, Integer> nameDocumentToIndex = new
             ConcurrentHashMap<>();
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
 
+    public void loadGradeFromJson() {
+        try {
+            gradeNameToMapFromIdxDocToFreqGrade =
+                    features.utils.Utils.readJsonFile (outFileWithGrade,
+                            TYPE_GRADE_MAP);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public ConcurrentHashMap<String,
+            ConcurrentHashMap<Integer, Integer>> getGradeNameToMapFromIdxDocToFreqGrade() {
+        return gradeNameToMapFromIdxDocToFreqGrade;
+    }
 
     void saveGrade() throws IOException {
         features.utils.Utils.loadArrayWithNameFiles();
@@ -53,13 +73,36 @@ class FindGrade {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter
                 (outFileWithGrade))) {
-            GSON.toJson(gradeToMapFromPathsToFreq, writer);
+            GSON.toJson(gradeNameToMapFromIdxDocToFreqGrade, writer);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void loadAllGrade() {
+
+    public List<String> getReadingGradeByLine() {
+        return readingGradeByLine;
+    }
+
+
+    public static ConcurrentHashMap<String, Double>
+    loadGradeFromFileWithStars() throws IOException {
+        ConcurrentHashMap<String, Double> gradeToStars = new
+                ConcurrentHashMap<>();
+        Path path = Paths.get(pathToGrade);
+        Files.readAllLines(path).forEach(line ->  {
+            String[] arrayNamesAndStars = line.split("->");
+
+            Double starsCount = Double.valueOf(arrayNamesAndStars[1]);
+            String[] nameGrade = arrayNamesAndStars[0].split(";");
+            Arrays.asList(nameGrade).forEach(name -> gradeToStars.put
+                    (name.toLowerCase().replaceAll(" ", ""), starsCount));
+        });
+
+        return gradeToStars;
+    }
+
+    public void loadAllGrade() {
         try {
             Path path = Paths.get(pathToGrade);
             Files.readAllLines(path).stream()
@@ -78,7 +121,7 @@ class FindGrade {
     }
 
     private void initMapWithGrade() {
-        readingGradeByLine.forEach(grade -> gradeToMapFromPathsToFreq.put(grade,
+        readingGradeByLine.forEach(grade -> gradeNameToMapFromIdxDocToFreqGrade.put(grade,
                 new ConcurrentHashMap<>()));
     }
 
@@ -96,7 +139,7 @@ class FindGrade {
                 Matcher matcher = pattern.matcher(textFile);
                 final Integer freq = countMatches(matcher);
 
-                gradeToMapFromPathsToFreq.computeIfPresent(grade,
+                gradeNameToMapFromIdxDocToFreqGrade.computeIfPresent(grade,
                         (gradeStr, pathIntegerConcurrentHashMap) ->
                                 addToGradeMap(pathToFile, freq,
                                         pathIntegerConcurrentHashMap)
