@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Utils {
-    private static final String pathToNameDocument = "../../../index_files.json";
+    private static final String pathToNameDocument = "../../../files.json";
     private static ConcurrentHashMap<String, Integer> nameDocumentToIndex = new ConcurrentHashMap<>();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
