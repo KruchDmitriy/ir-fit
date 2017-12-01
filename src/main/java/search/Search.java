@@ -7,7 +7,10 @@ import features.FindAddress;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Search {
@@ -68,11 +71,20 @@ public class Search {
                     if (url == null) {
                         url = invertIndex.documentById(idx).replaceAll("_", "/");
                     }
-
+                    String text = "";
+                    try {
+                        text = Files
+                                .lines(Paths.get(Utils.PATH_TO_TEXTS+ invertIndex.documentById(idx)))
+                                .flatMap(Pattern.compile("\\s+")::splitAsStream).limit(100)
+                                .collect(Collectors.joining(" "));
+                    } catch (IOException e) {
+                        System.out.println(e.getMessage());
+                    }
                     return new Document(
                             url,
                             GenerateStartForDocument.getStarsById(idx),
-                            address.getListByIdDoc(idx));
+                            address.getListByIdDoc(idx),
+                            text);
                 })
                 .collect(Collectors.toList());
     }

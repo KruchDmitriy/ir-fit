@@ -24,12 +24,12 @@ import java.util.stream.Stream;
 
 public class InvertIndex {
     private static final Logger LOGGER = Logger.getLogger(InvertIndex.class);
-    private static final String IR_FIT_DATA_INDEX = "../ir-fit-data/index1/";
+    private static final String IR_FIT_DATA_INDEX = "../ir-fit-data/index/";
 
     private static final String FILE_INDEX_NAME = "files.json";
     private static final String WORD_FREQ_INDEX_NAME = "freqs.json";
     private static final String FILE_LENGTH_INDEX_NAME = "len_files.json";
-    private static final String FILE_POSITIONS_INDEX_NAME = "file_pos.json";
+    private static final String FILE_POSITIONS_INDEX_NAME = "index_file_pos.json";
     private static final String META_INDEX_NAME = "meta.json";
 
     private static final String PATH_INDEX_FILES = IR_FIT_DATA_INDEX + FILE_INDEX_NAME;
