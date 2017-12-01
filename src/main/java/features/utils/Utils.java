@@ -7,7 +7,6 @@ import data_preprocess.InvertIndex;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,6 +20,7 @@ public class Utils {
 
     public static void loadArrayWithNameFiles() throws IOException {
         List<String> nameDocument = InvertIndex.readFileIndex(pathToNameDocument);
+
         if (nameDocument == null) {
             System.out.println(" document name not found ");
             return;

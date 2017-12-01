@@ -3,12 +3,12 @@ package db;
 import crawl.NotValidUploadedException;
 import crawl.Page;
 import db.readConfig.Config;
+import features.utils.Utils;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
 import java.sql.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DbConnection {
     private static final Logger LOGGER = Logger.getLogger(DbConnection.class);
@@ -47,6 +47,9 @@ public class DbConnection {
     }
 
     private boolean createConnection() {
+        if (connection != null) {
+            return true;
+        }
         try {
             if (config.getDriver() != null) {
                 Class.forName(config.getDriver());
@@ -67,6 +70,35 @@ public class DbConnection {
         LOGGER.debug("Create db connection");
         return true;
     }
+
+    public ConcurrentHashMap<Integer, String> readAllTableUrls() {
+        if (!createConnection()) {
+            return null;
+        }
+
+        Utils.loadArrayWithNameFiles(); // name with _ to idx
+
+        ConcurrentHashMap<Integer, String> map = new ConcurrentHashMap<>();
+        try {
+            Statement st = connection.createStatement();
+            ResultSet rs = st.executeQuery("select * from urls");
+
+            while (rs.next()) {
+                String originUrl = rs.getString(2);
+                String fileNameInSystem = originUrl.replaceAll("/", "_");
+                Integer idx = Utils.getNameDocumentToIndex()
+                        .get(fileNameInSystem);
+                if (idx != null) {
+                    map.put(idx, originUrl);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return map;
+    }
+
 
     int selectFromUrlByUrl(@NotNull String url) {
         String sql = " { ? = call getUrlId ( ? ) } ";
@@ -107,7 +139,7 @@ public class DbConnection {
             final int rows = statement.executeUpdate();
             return true;
         } catch (SQLException ex) {
-            LOGGER.debug(sql + " ERROR " );
+            LOGGER.debug(sql + " ERROR ");
         }
         return false;
     }
@@ -124,7 +156,7 @@ public class DbConnection {
             statement.setInt(2, idSection);
             statement.executeUpdate();
         } catch (SQLException ex) {
-            LOGGER.debug(sql + " ERROR " );
+            LOGGER.debug(sql + " ERROR ");
         }
 
     }
@@ -139,9 +171,9 @@ public class DbConnection {
 
         try (PreparedStatement statement =
                      connection.prepareStatement(sqlInsertToURL,
-                Statement.RETURN_GENERATED_KEYS);
+                             Statement.RETURN_GENERATED_KEYS);
              PreparedStatement statement1 =
-                connection.prepareStatement(sqlInsertParent)) {
+                     connection.prepareStatement(sqlInsertParent)) {
             statement.setString(1, page.getUrl().toString());
             statement.setString(2, pathToFile);
             statement.setString(3, page.hash());
@@ -303,7 +335,7 @@ public class DbConnection {
     private int runExecuteSqlSelectQuery(@NotNull String sql, @NotNull String url) throws SQLException {
         CallableStatement statement = connection.prepareCall(sql);
         statement.registerOutParameter(1, Types.INTEGER);
-        statement.setString(2,  url);
+        statement.setString(2, url);
         statement.execute();
         return statement.getInt(1);
     }
