@@ -8,6 +8,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Utils {
@@ -22,7 +23,12 @@ public class Utils {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public static void loadArrayWithNameFiles() {
-        ArrayList nameDocument = InvertIndex.getNameArray(pathToNameDocument);
+        List<String> nameDocument = null;
+        try {
+            nameDocument = InvertIndex.readFileIndex(pathToNameDocument);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         if (nameDocument == null) {
             System.out.println(" document name not found ");
             return;
