@@ -1,7 +1,12 @@
 package features.utils;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import data_preprocess.InvertIndex;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -12,6 +17,9 @@ public class Utils {
 
     private static ConcurrentHashMap<String, Integer> nameDocumentToIndex = new
             ConcurrentHashMap<>();
+
+
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public static void loadArrayWithNameFiles() {
         ArrayList nameDocument = InvertIndex.getNameArray(pathToNameDocument);
@@ -26,5 +34,14 @@ public class Utils {
 
     public static ConcurrentHashMap<String, Integer> getNameDocumentToIndex() {
         return nameDocumentToIndex;
+    }
+
+    public static void dumpStructureToJson(Object o, String pathToOutFile) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter
+                (pathToOutFile))) {
+            GSON.toJson(o, writer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

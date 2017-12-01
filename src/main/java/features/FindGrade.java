@@ -61,6 +61,8 @@ class FindGrade {
 
 
 
+
+
     private void loadAllGrade() {
         try {
             Path path = Paths.get(pathToGrade);
