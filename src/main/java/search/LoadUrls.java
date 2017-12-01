@@ -2,13 +2,14 @@ package search;
 
 import db.DbConnection;
 
+import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class LoadUrls {
 
     private static ConcurrentHashMap<Integer, String> idxDocumentToOriginUrl;
 
-    public static void loadUrls() {
+    public static void loadUrls() throws IOException {
         DbConnection connection = new DbConnection();
         idxDocumentToOriginUrl = connection.readAllTableUrls();
     }
@@ -17,7 +18,7 @@ public class LoadUrls {
         return idxDocumentToOriginUrl;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         LoadUrls.loadUrls();
     }
 }
