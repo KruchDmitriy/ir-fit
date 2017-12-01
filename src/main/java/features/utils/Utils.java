@@ -6,6 +6,7 @@ import data_preprocess.InvertIndex;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,7 +33,7 @@ public class Utils {
             return;
         }
         for (int idx = 0; idx < nameDocument.size(); idx++) {
-            nameDocumentToIndex.put(nameDocument.get(idx).toString(), idx);
+            nameDocumentToIndex.put(nameDocument.get(idx), idx);
         }
     }
 
@@ -50,7 +51,8 @@ public class Utils {
     }
 
     public static <T> T readJsonFile(@NotNull String pathToJsonFile,
-                                     Class<T> returnObjClass) throws IOException {
+                                     Type returnObjClass)
+            throws IOException {
         try (Reader reader = new BufferedReader(new FileReader(pathToJsonFile))) {
             return GSON.fromJson(reader, returnObjClass);
         }
