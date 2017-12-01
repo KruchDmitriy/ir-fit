@@ -23,7 +23,8 @@ public class SearchServer extends AbstractHandler {
         ServletContextHandler context = new ServletContextHandler(
                 ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        context.setResourceBase(System.getProperty("java.io.tmpdir"));
+        context.setResourceBase("src/main/web-app");
+//        context.setResourceBase(System.getProperty("./src/web-app"));
         server.setHandler(context);
 
         // Add dump servlet

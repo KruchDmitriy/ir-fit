@@ -6,6 +6,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 @WebServlet(urlPatterns = {"/search"})
 public class SearchServlet extends HttpServlet {
@@ -15,6 +17,8 @@ public class SearchServlet extends HttpServlet {
             throws IOException, ServletException {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("<h1>Hello Servlet</h1>");
+
+        Files.lines(Paths.get("src/main/web-app/WEB-INF/mapYandex.html"))
+                .forEach(response.getWriter()::println);
     }
 }
