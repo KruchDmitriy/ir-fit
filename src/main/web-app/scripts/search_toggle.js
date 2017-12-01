@@ -14,6 +14,11 @@ function searchToggle(obj, evt){
     }
 }
 
+function createSnippet(doc) {
+    const container = $(".container");
+    console.log(container);
+}
+
 function submitFn(obj, event){
     const value = $(obj).find('.search-input').val().trim();
 

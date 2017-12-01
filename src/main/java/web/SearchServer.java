@@ -16,7 +16,7 @@ public class SearchServer {
         context.setResourceBase("src/main/web-app");
 
         context.addServlet(DefaultServlet.class, "/");
-//        context.addServlet(HomeServlet.class, "/home");
+        context.addServlet(HomeServlet.class, "/home");
         context.addServlet(SearchServlet.class, "/search");
         server.setHandler(context);
 

@@ -23,7 +23,8 @@ public class SearchServlet extends HttpServlet {
             new TypeToken<Map<String, String>>() {}.getType();
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
         doGet(req, resp);
     }
 
@@ -33,7 +34,8 @@ public class SearchServlet extends HttpServlet {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
 
-        final Optional<String> json = request.getReader().lines().peek(System.out::println).findFirst();
+        final Optional<String> json = request.getReader()
+                .lines().peek(System.out::println).findFirst();
         System.out.println(json);
         if (json.isPresent() && !json.get().isEmpty()) {
             final Map<String, String> getContent = GSON.fromJson(json.get(), TYPE_GET_CONTENT);
@@ -47,9 +49,7 @@ public class SearchServlet extends HttpServlet {
                 }
                 firstPage.forEach(System.out::println);
                 GSON.toJson(firstPage, response.getWriter());
-                return;
             }
         }
-        Files.lines(Paths.get("./src/main/web-app/WEB-INF/map.html")).forEach(response.getWriter()::println);
     }
 }

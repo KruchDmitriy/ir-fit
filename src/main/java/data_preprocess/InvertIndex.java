@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 
 public class InvertIndex {
     private static final Logger LOGGER = Logger.getLogger(InvertIndex.class);
-    private static final String IR_FIT_DATA_INDEX = "../ir-fit-data/index1/";
+    private static final String IR_FIT_DATA_INDEX = "../ir-fit-data/index/";
 
     private static final String FILE_INDEX_NAME = "files.json";
     private static final String WORD_FREQ_INDEX_NAME = "freqs.json";
