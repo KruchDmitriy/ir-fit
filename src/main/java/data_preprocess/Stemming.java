@@ -20,10 +20,10 @@ public class Stemming {
     private static final Logger LOGGER = Logger.getLogger(Stemming.class);
     private Map<String, Long> strToFrequency = new HashMap<>();
 
-    public void runStemming() {
+    public void runStemming(@NotNull String pathToPreprocessedTexts) {
         SnowballStemmer stemmer = new SnowballStemmer(SnowballStemmer.ALGORITHM.RUSSIAN);
         try {
-            Stream<String> stringStream = Utils.readWords(Paths.get(Utils.PATH_TO_TEXTS));
+            Stream<String> stringStream = Utils.readWords(Paths.get(pathToPreprocessedTexts));
 
             strToFrequency = stringStream
                     .map(stemmer::stem)
@@ -34,15 +34,13 @@ public class Stemming {
         }
     }
 
-    public void runStemmingByFile() {
-        SnowballStemmer stemmer = new SnowballStemmer(SnowballStemmer.ALGORITHM.RUSSIAN);
-        Utils.getAllFiles(Paths.get(Utils.PATH_TO_TEXTS)).forEach(path ->
+    public void runStemmingByFile(@NotNull String pathToPreprocessedTexts) {
+        final SnowballStemmer stemmer = new SnowballStemmer(SnowballStemmer.ALGORITHM.RUSSIAN);
+        Utils.getAllFiles(Paths.get(pathToPreprocessedTexts)).forEach(path ->
         {
             String fileName = Utils.getLast(Arrays.asList(path.toString().split("/")));
             try (PrintWriter writer = new PrintWriter(Utils.PATH_TO_STEMMED_TEXTS + fileName)){
-                Stream<String> stringStream = Utils.readFile(path);
-
-                stringStream
+                Utils.readFile(path)
                         .map(stemmer::stem).map(CharSequence::toString)
                         .forEach(word -> {
                             if (strToFrequency.get(word) < 570000) {

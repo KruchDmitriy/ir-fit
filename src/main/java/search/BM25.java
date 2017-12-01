@@ -2,40 +2,15 @@ package search;
 
 
 public class BM25 {
+    private static final double k_1 = 1.2d;
+    private static final double k_3 = 8d;
+    private static final double b = 0.75d;
+    private final double numberOfDocuments;
+    private final double averageDocumentLength;
 
-    /** The constant k_1.*/
-    private double k_1 = 1.2d;
-
-    /** The constant k_3.*/
-    private double k_3 = 8d;
-
-    /** The parameter b.*/
-    private double b;
-
-    private double numberOfDocuments;
-
-    private double averageDocumentLength;
-
-    public void setNumberOfDocuments(double numberOfDocuments) {
+    public BM25(double numberOfDocuments, double averageDocumentLength) {
         this.numberOfDocuments = numberOfDocuments;
-    }
-
-    public void setAverageDocumentLength(double averageDocumentLength) {
         this.averageDocumentLength = averageDocumentLength;
-    }
-
-    /** A default constructor.*/
-    public BM25() {
-        super();
-        b = 0.75d;
-    }
-
-    /**
-     * Returns the name of the model.
-     * @return the name of the model
-     */
-    public final String getInfo() {
-        return "BM25 >> b="+b +", k_1=" + k_1 +", k_3=" + k_3;
     }
 
     /**
@@ -48,32 +23,12 @@ public class BM25 {
     public final double score(double tf,
                               double docLength,
                               double queryFrequency,
-                              double documentFrequency) {
-
+                              double documentNumber) {
         double K = k_1 * ((1 - b) + ((b * docLength) / averageDocumentLength));
-        double weight = ( ((k_1 + 1d) * tf) / (K + tf) );	//first part
-        weight = weight * ( ((k_3 + 1) * queryFrequency) / (k_3 + queryFrequency) );	//second part
+        double weight = ( ((k_1 + 1d) * tf) / (K + tf) );
+        weight = weight * ( ((k_3 + 1) * queryFrequency) / (k_3 + queryFrequency) );
 
-        // multiply the weight with idf
-        double idf = weight * Math.log((numberOfDocuments - documentFrequency + 0.5d) / (documentFrequency + 0.5d));
-        return idf;
+        double idf = Math.log((numberOfDocuments - documentNumber + 0.5d) / (documentNumber + 0.5d));
+        return weight * idf;
     }
-
-
-    /**
-     * Sets the b parameter to BM25 ranking formula
-     * @param b the b parameter value to use.
-     */
-    public void setParameter(double b) {
-        this.b = b;
-    }
-
-
-    /**
-     * Returns the b parameter to the BM25 ranking formula as set by setParameter()
-     */
-    public double getParameter() {
-        return this.b;
-    }
-
 }

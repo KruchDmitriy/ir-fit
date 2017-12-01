@@ -7,10 +7,22 @@ public class LookUpTableFreq {
     /**
      * File to freq word in this file
      */
-    private Map<Integer, Long> fileToFreq = new HashMap<>();
+    private Map<Integer, Integer> fileToFreq = new LinkedHashMap<>();
 
-    void addFreq(Integer fileId, Long freq) {
+    void addFreq(Integer fileId, Integer freq) {
         fileToFreq.put(fileId, freq);
+    }
+
+    int getFreq(Integer fileId) {
+        return fileToFreq.get(fileId);
+    }
+
+    Set<Integer> getAllFiles() {
+        return fileToFreq.keySet();
+    }
+
+    int size() {
+        return fileToFreq.size();
     }
 
     @Override

@@ -22,6 +22,7 @@ public class Utils {
     public static final String PATH_TO_PREPROCESSED_TEXTS = "../ir-fit-data/preprocessed_texts/";
     public static final String PATH_TO_STEMMED_TEXTS = "../ir-fit-data/stemmed_texts/";
     public static final String PATH_TO_HIST = "src/main/resources/scripts/data_histogram.txt";
+    private static final String REGEX_SPLIT_TO_WORDS = "[^a-zA-ZА-Яа-я]+";
 
     public static List<Path> getAllFiles(final @NotNull Path directory) {
         try (Stream<Path> paths = Files.walk(directory)) {
@@ -50,27 +51,26 @@ public class Utils {
                 }).filter(Objects::nonNull);
     }
 
+    public static Stream<String> splitToWords(final @NotNull String string) {
+        return Arrays.stream(string.split(REGEX_SPLIT_TO_WORDS));
+    }
+
     public static Stream<String> readWords(final @NotNull Path dir) throws IOException {
         return Utils.readFiles(dir)
-                .map(s -> s.split("[^a-zA-ZА-Яа-я]+"))
+                .map(s -> s.split(REGEX_SPLIT_TO_WORDS))
                 .flatMap(Arrays::stream)
                 .filter(s -> !s.isEmpty());
     }
 
-    public static Stream<String> readFile(final @NotNull Path file) {
-        try {
-            return Files.lines(file)
-                    .map(s -> s.split("[^a-zA-ZА-Яа-я]+"))
-                    .flatMap(Arrays::stream)
-                    .filter(s -> !s.isEmpty());
-        } catch (IOException e) {
-            LOGGER.error(e.getMessage(), e);
-        }
-        return null;
+    public static Stream<String> readFile(final @NotNull Path file) throws IOException {
+        return Files.lines(file)
+                .map(s -> s.split(REGEX_SPLIT_TO_WORDS))
+                .flatMap(Arrays::stream)
+                .filter(s -> !s.isEmpty());
     }
 
-    public static Map<String, Long> createFreqMap(Stream<String> stringStream) {
-        return stringStream.parallel()
+    public static Map<String, Long> createFreqMap(Stream<String> streamOfWords) {
+        return streamOfWords.parallel()
                 .map(CharSequence::toString)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
