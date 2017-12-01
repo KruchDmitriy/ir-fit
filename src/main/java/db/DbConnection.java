@@ -71,25 +71,26 @@ public class DbConnection {
         return true;
     }
 
-    public ConcurrentHashMap<String, String> readAllTableUrls() {
+    public ConcurrentHashMap<Integer, String> readAllTableUrls() {
         if (!createConnection()) {
             return null;
         }
 
         Utils.loadArrayWithNameFiles(); // name with _ to idx
 
-        ConcurrentHashMap<String, String> map = new ConcurrentHashMap<>();
-
-        Utils.getNameDocumentToIndex()
-                .forEach((key, value) -> map.put(key, ""));
-
+        ConcurrentHashMap<Integer, String> map = new ConcurrentHashMap<>();
         try {
             Statement st = connection.createStatement();
             ResultSet rs = st.executeQuery("select * from urls");
-//            page.getUrl().toString().replaceAll("/", "_");
+
             while (rs.next()) {
-                System.out.println(rs.getString(1) + " " +
-                        rs.getString(2));
+                String originUrl = rs.getString(2);
+                String fileNameInSystem = originUrl.replaceAll("/", "_");
+                Integer idx = Utils.getNameDocumentToIndex()
+                        .get(fileNameInSystem);
+                if (idx != null) {
+                    map.put(idx, originUrl);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
