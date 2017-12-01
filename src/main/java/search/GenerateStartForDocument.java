@@ -93,14 +93,14 @@ public class GenerateStartForDocument {
                 Utils.readJsonFile(pathCountStars, TYPE_MAP_WITH_COUNT_STARS);
     }
 
-//    public static void main(String[] args) {
-//        GenerateStartForDocument.loadGradeFromJson();
-//        GenerateStartForDocument.calculateStarsForAllDocument();
-//        GenerateStartForDocument.saveCountStart();
+    public static void main(String[] args) {
+        GenerateStartForDocument.loadGradeFromJson();
+        GenerateStartForDocument.calculateStarsForAllDocument();
+        GenerateStartForDocument.saveCountStart();
 //        try {
 //            GenerateStartForDocument.loadFromJsonCountStars();
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
-//    }
+    }
 }

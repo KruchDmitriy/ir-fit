@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public class FindAddress {
-    private static final String pathToJsonWithAddress = "../../../address.json";
+    private static final String pathToJsonWithAddress = "./src/main/resources/address.json";
     private static final String pathToDirWithAddress = "./src/main/resources/address/";
     private ConcurrentHashMap<Integer, ConcurrentSkipListSet<String>>
             idDocumentToListAddres = new ConcurrentHashMap<>();

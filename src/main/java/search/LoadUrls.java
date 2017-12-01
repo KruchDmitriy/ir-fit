@@ -37,10 +37,10 @@ public class LoadUrls {
         }
     }
 
-    public static void main(String[] args) {
-//        LoadUrls.loadUrls();
-//        Utils.dumpStructureToJson(LoadUrls.getIdxDocumentToOriginUrl(), idxToUrlDoc);
-        LoadUrls.loadJsonFileWithIdxToUrlOriginAddress();
+    public static void main(String[] args) throws IOException {
+        LoadUrls.loadUrls();
+        Utils.dumpStructureToJson(LoadUrls.getIdxDocumentToOriginUrl(), idxToUrlDoc);
+//        LoadUrls.loadJsonFileWithIdxToUrlOriginAddress();
         int a = 0;
 
     }
