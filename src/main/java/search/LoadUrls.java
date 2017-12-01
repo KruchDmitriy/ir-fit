@@ -15,7 +15,7 @@ public class LoadUrls {
 
     private static ConcurrentHashMap<Integer, String> idxDocumentToOriginUrl;
 
-    public static void loadUrls() {
+    public static void loadUrls() throws IOException {
         DbConnection connection = new DbConnection();
         idxDocumentToOriginUrl = connection.readAllTableUrls();
     }
@@ -23,7 +23,6 @@ public class LoadUrls {
     public static ConcurrentHashMap<Integer, String> getIdxDocumentToOriginUrl() {
         return idxDocumentToOriginUrl;
     }
-
 
     public static void loadJsonFileWithIdxToUrlOriginAddress() {
         try {
@@ -43,5 +42,6 @@ public class LoadUrls {
 //        Utils.dumpStructureToJson(LoadUrls.getIdxDocumentToOriginUrl(), idxToUrlDoc);
         LoadUrls.loadJsonFileWithIdxToUrlOriginAddress();
         int a = 0;
+
     }
 }

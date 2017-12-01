@@ -7,6 +7,7 @@ import features.utils.Utils;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.sql.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -71,7 +72,7 @@ public class DbConnection {
         return true;
     }
 
-    public ConcurrentHashMap<Integer, String> readAllTableUrls() {
+    public ConcurrentHashMap<Integer, String> readAllTableUrls() throws IOException {
         if (!createConnection()) {
             return null;
         }
