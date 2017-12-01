@@ -93,6 +93,10 @@ public class GenerateStartForDocument {
                 Utils.readJsonFile(pathCountStars, TYPE_MAP_WITH_COUNT_STARS);
     }
 
+    public static double getStarsById(@NotNull Integer idx) {
+        return idxDocumentToStartValue.get(idx);
+    }
+
 //    public static void main(String[] args) {
 //        GenerateStartForDocument.loadGradeFromJson();
 //        GenerateStartForDocument.calculateStarsForAllDocument();

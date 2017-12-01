@@ -1,14 +1,24 @@
 package search;
 
-public class Document {
-    public final String address;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
-    public Document(String address) {
-        this.address = address;
+import java.util.concurrent.ConcurrentSkipListSet;
+
+public class Document {
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    public final String url;
+    public final Double starsCount;
+    public final ConcurrentSkipListSet<String> addresses;
+
+    public Document(String url, Double starsCount, ConcurrentSkipListSet<String> addresses) {
+        this.url = url;
+        this.starsCount = starsCount;
+        this.addresses = addresses;
     }
 
     @Override
     public String toString() {
-        return address;
+        return GSON.toJson(this);
     }
 }

@@ -3,6 +3,7 @@ package search;
 import data_preprocess.InvertIndex;
 import data_preprocess.Stemming;
 import data_preprocess.utils.Utils;
+import features.FindAddress;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -12,11 +13,18 @@ import java.util.stream.Collectors;
 public class Search {
     private final InvertIndex invertIndex;
     private final BM25 bm25;
+    private final FindAddress address;
+
 
     public Search() throws IOException {
         invertIndex = InvertIndex.readFromDirectory();
         InvertIndex.Meta meta = invertIndex.getMeta();
         bm25 = new BM25(meta.numberOfDocuments, meta.averageDocumentLength);
+        address = new FindAddress();
+        address.loadAddressFromJson();
+
+        LoadUrls.loadJsonFileWithIdxToUrlOriginAddress();
+        GenerateStartForDocument.loadFromJsonCountStars();
     }
 
     public List<Document> process(@NotNull String query) {
@@ -45,9 +53,21 @@ public class Search {
             ranging.put(scores[i], documents.get(i));
         }
 
+        System.out.println("min " + ranging.firstKey());
+        System.out.println("max " + ranging.lastKey());
+
         return ranging.values().stream()
-                .map(invertIndex::documentById)
-                .map(Document::new)
+                .map(idx -> {
+                    String url = LoadUrls.getUrlById(idx);
+                    if (url == null) {
+                        url = invertIndex.documentById(idx).replaceAll("_", "/");
+                    }
+
+                    return new Document(
+                            url,
+                            GenerateStartForDocument.getStarsById(idx),
+                            address.getListByIdDoc(idx));
+                })
                 .collect(Collectors.toList());
     }
 

@@ -131,7 +131,7 @@ public class InvertIndex {
 
     public List<Integer> getDocumentsIdContainTerm(@NotNull String term) {
         final LookUpTableFreq tableFreq = wordToFreqFile.get(term);
-        return new ArrayList<>(tableFreq.getAllFiles());
+        return tableFreq == null ? Collections.EMPTY_LIST : new ArrayList<>(tableFreq.getAllFiles());
     }
 
     public Meta getMeta() {

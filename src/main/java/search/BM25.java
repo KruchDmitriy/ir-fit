@@ -20,15 +20,11 @@ public class BM25 {
      * @return the score assigned to a document with the given
      *         tf and docLength, and other preset parameters
      */
-    public final double score(double tf,
-                              double docLength,
-                              double queryFrequency,
-                              double documentNumber) {
+    public double score(double tf, double docLength, double queryFrequency, double documentNumber) {
         double K = k_1 * ((1. - b) + ((b * docLength) / averageDocumentLength));
         double weight = ( ((k_1 + 1.) * tf) / (K + tf) );
         weight *= ( ((k_3 + 1.) * queryFrequency) / (k_3 + queryFrequency) );
 
-//        double idf = Math.log((numberOfDocuments - documentNumber + 0.5) / (documentNumber + 0.5));
         double idf = Math.log(numberOfDocuments / documentNumber);
         return weight * idf;
     }

@@ -3,6 +3,7 @@ package search;
 import com.google.gson.reflect.TypeToken;
 import db.DbConnection;
 import features.utils.Utils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -29,12 +30,14 @@ public class LoadUrls {
 
             Type type = new TypeToken<ConcurrentHashMap<Integer, String>>() {
             }.getType();
-            idxDocumentToOriginUrl =
-                    Utils.readJsonFile(idxToUrlDoc,
-                            type);
+            idxDocumentToOriginUrl = Utils.readJsonFile(idxToUrlDoc, type);
         } catch (IOException e) {
             System.out.println("load file " + idxToUrlDoc + " failed");
         }
+    }
+
+    public static String getUrlById(@NotNull Integer id) {
+        return idxDocumentToOriginUrl.get(id);
     }
 
     public static void main(String[] args) {

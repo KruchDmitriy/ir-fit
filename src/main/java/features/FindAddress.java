@@ -1,9 +1,11 @@
 package features;
 
+import com.google.gson.reflect.TypeToken;
 import features.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,15 +15,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public class FindAddress {
-    private static final String pathToJsonWithAddress = "../../../address.json";
-    private static final String pathToDirWithAddress = "./src/main/resources/address/";
+    private static final String pathToJsonWithAddress = "./src/main/resources/address.json";
+    private static final String pathToDirWithAddress = "./src/main/resources/url/";
     private ConcurrentHashMap<Integer, ConcurrentSkipListSet<String>>
             idDocumentToListAddres = new ConcurrentHashMap<>();
 
+
+    private static final Type TYPE_MAP_WITH_ADDRESS = new
+            TypeToken<ConcurrentHashMap<Integer, ConcurrentSkipListSet<String>>>() {
+            }.getType();
+
     /**
-     * "address(.+)<br\\s+/>";
+     * "url(.+)<br\\s+/>";
      * "<p>Адрес:\K(.*)(?=</p>)" - dance line
-     * "address\">\K(.*)(?=\<)"
+     * "url\">\K(.*)(?=\<)"
      */
 
     public void initIdxDocument() throws IOException {
@@ -59,6 +66,14 @@ public class FindAddress {
 
     public void saveJsonAddress() {
         Utils.dumpStructureToJson(idDocumentToListAddres, pathToJsonWithAddress);
+    }
+
+    public void loadAddressFromJson() throws IOException {
+        idDocumentToListAddres = Utils.readJsonFile(pathToJsonWithAddress, TYPE_MAP_WITH_ADDRESS);
+    }
+
+    public  ConcurrentSkipListSet<String> getListByIdDoc(@NotNull Integer idx) {
+        return idDocumentToListAddres.get(idx);
     }
 
     public void readAllFilesWithAddress() {
