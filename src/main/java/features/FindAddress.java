@@ -1,137 +1,86 @@
 package features;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import data_preprocess.utils.Utils;
+import features.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentSkipListSet;
 
-class FindAddress {
+public class FindAddress {
 
-    private static final String pathToGrade = "./src/main/resources/grade.txt";
-    private static final String pathToDocument = "../../../documents_small/";
-    private static final String pathToNameDocument =
-            "../../../index_file.json";
+    private static final String pathToJsonWithAddress = "../../../address.json";
 
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>>
-            // grade name to List from (name_doc, freq_grade_in_document)
-            gradeToMapFromPathsToFreq = new ConcurrentHashMap<>();
+    private static final String pathToDirWithAddress = "" +
+            "./src/main/resources/address/";
 
-    private List<String> readingGradeByLine = new LinkedList<>();
-
-    private ConcurrentHashMap<String, Pattern> compilePattern = new
-            ConcurrentHashMap<>();
-
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-
-//    private static final String matchAddressForKartaSporta =
-//            "address(.+)<br\\s+/>";
-//    "<p>Адрес:\K(.*)(?=</p>)" - dance line
-//    "address\">\K(.*)(?=\<)"
+    private ConcurrentHashMap<Integer, ConcurrentSkipListSet<String>>
+            idDocumentToListAddres = new ConcurrentHashMap<>();
 
 
+    //    "address(.+)<br\\s+/>";
+    //    "<p>Адрес:\K(.*)(?=</p>)" - dance line
+    //    "address\">\K(.*)(?=\<)"
 
-    void saveGrade() {
-        loadAllGrade();
-        initCompilePattern();
-        initMapWithGrade();
-        findGradeInAllFiles();
 
-        try(BufferedWriter writer = new BufferedWriter(new FileWriter
-                    ("./src/main/resources/gradeFind.txt"))) {
-            GSON.toJson(gradeToMapFromPathsToFreq, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void initIdxDocument() {
+        Utils.loadArrayWithNameFiles();
+        Utils.getNameDocumentToIndex().forEach((nameDoc, idx) ->
+                idDocumentToListAddres.put(idx, new ConcurrentSkipListSet<>()));
     }
 
-    private void loadArrayWithNameFiles() {
-
-    }
-
-    private void loadAllGrade() {
+    public void setAddressFromDocument(@NotNull final Path pathToDocument) {
         try {
-            Path path = Paths.get(pathToGrade);
-            Files.readAllLines(path).stream()
-                    .flatMap(Pattern.compile(";")::splitAsStream)
-                    .forEach(readingGradeByLine::add);
+//            String str = "http:__belgorod.kartasporta" +
+//                    ".ru_sport_borba_greko_rimskaya_sport_shashki_:\\\">Белгородская область, г." +
+//                    " Старый Оскол, Олимпийс\n" +
+//                    "кий мкр., д. 34";
+//            String[] strArr = str.split(":\\\\\">", 2);
+            Files.readAllLines(pathToDocument).parallelStream()
+                    .filter(Objects::nonNull)
+                    .map(str -> str.split("--->>>", 2))
+                    .filter(Objects::nonNull)
+                    .forEach(strings -> {
+                        if (strings.length == 2 &&
+                                strings[0] != null && !strings[0].isEmpty() &&
+                                strings[1] != null && !strings[1].isEmpty()) {
+                            Integer idx = Utils.getNameDocumentToIndex().get
+                                    (strings[0]);
+                            if (idx != null) {
+                                idDocumentToListAddres.get(idx).add(strings[1]);
+                            }
+                        }
+                    });
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void initCompilePattern() {
-        readingGradeByLine.forEach(grade ->
-                compilePattern.put(grade, Pattern.compile(grade))
-        );
+    public void saveJsonAddress() {
+        Utils.dumpStructureToJson(idDocumentToListAddres, pathToJsonWithAddress);
     }
 
-    private void initMapWithGrade() {
-        readingGradeByLine.forEach(grade -> gradeToMapFromPathsToFreq.put(grade,
-                new ConcurrentHashMap<>()));
+    public void readAllFilesWithAddress() {
+        List<Path> addresses = data_preprocess.utils.Utils.getAllFiles(Paths.get
+                (pathToDirWithAddress));
+        addresses.parallelStream().filter(Objects::nonNull).forEach
+                (addr -> {
+                    System.out.println(addr);
+                    setAddressFromDocument(addr);
+                });
     }
 
-    private void findGradeInAllFiles() {
-        List<Path> paths = Utils.getAllFiles(Paths.get(pathToDocument));
-        paths.forEach(this::saveGradeFromFile);
+    public static void main(String[] args) {
+        FindAddress findAddress = new FindAddress();
+        findAddress.initIdxDocument();
+        findAddress.readAllFilesWithAddress();
+        findAddress.saveJsonAddress();
     }
-
-    private void saveGradeFromFile(@NotNull Path pathToFile) {
-        try {
-            String textFile = readFileToString(pathToFile);
-
-            compilePattern.forEach((grade, pattern) -> {
-
-                Matcher matcher = pattern.matcher(textFile);
-                final Integer freq = countMatches(matcher);
-
-                gradeToMapFromPathsToFreq.computeIfPresent(grade,
-                        (gradeStr, pathIntegerConcurrentHashMap) ->
-                                addToGradeMap(pathToFile.toString(), freq,
-                                        pathIntegerConcurrentHashMap)
-                );
-
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private ConcurrentHashMap<String, Integer>
-    addToGradeMap(@NotNull String path, @NotNull Integer freq,
-                  ConcurrentHashMap<String, Integer> map) {
-        if (freq > 0) {
-            map.put(path, freq);
-        }
-        return map;
-    }
-
-    private static Integer countMatches(@NotNull final Matcher matcher) {
-        Integer freq = 0;
-        while (matcher.find()) {
-            ++freq;
-        }
-        return freq;
-    }
-
-
-    private String readFileToString(@NotNull Path path) throws
-            IOException {
-        return Files.lines(path).collect(Collectors.joining());
-
-    }
-
 }
+
+
