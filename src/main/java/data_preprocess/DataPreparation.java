@@ -4,7 +4,6 @@ import data_preprocess.utils.Utils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,7 +32,7 @@ public class DataPreparation {
 
             if (!Files.exists(Paths.get(Utils.PATH_TO_HIST))) {
                 LOGGER.info("Running stemming");
-                stemming.runStemming(Utils.PATH_TO_PREPROCESSED_TEXTS);
+                stemming.createWordFrequencyMap(Utils.PATH_TO_PREPROCESSED_TEXTS);
                 LOGGER.info("Saving words histogram");
                 stemming.writeHistogramToFile(Utils.PATH_TO_HIST);
             } else {
@@ -41,7 +40,7 @@ public class DataPreparation {
                 stemming.readHist(Utils.PATH_TO_HIST);
             }
             LOGGER.info("Saving stemming to files");
-            stemming.runStemmingByFile(Utils.PATH_TO_PREPROCESSED_TEXTS);
+            stemming.runStemmingOnFiles(Utils.PATH_TO_PREPROCESSED_TEXTS);
         }
 
         LOGGER.info("Creating index");

@@ -62,7 +62,7 @@ public class Utils {
                 .filter(s -> !s.isEmpty());
     }
 
-    public static Stream<String> readFile(final @NotNull Path file) throws IOException {
+    public static Stream<String> readWordsFromFile(final @NotNull Path file) throws IOException {
         return Files.lines(file)
                 .map(s -> s.split(REGEX_SPLIT_TO_WORDS))
                 .flatMap(Arrays::stream)

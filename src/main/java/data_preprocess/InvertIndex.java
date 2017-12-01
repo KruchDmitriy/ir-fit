@@ -51,19 +51,20 @@ public class InvertIndex {
 
     public static InvertIndex create(String pathToStemmedTexts, boolean createPositionIndex) throws IOException {
         InvertIndex invertIndex = new InvertIndex();
-        LOGGER.debug("getting unique words");
+        LOGGER.info("getting unique words");
         invertIndex.createMapWithWords();
 
-        LOGGER.debug("creating index: word to freq in each file");
+        LOGGER.info("creating index: word to freq in each file");
         invertIndex.createWordToFreqIndex(Paths.get(pathToStemmedTexts));
         invertIndex.dumpWordToFreqIndex();
 
         if (createPositionIndex) {
-            LOGGER.debug("creating index; word to position in each files");
+            LOGGER.info("creating index; word to position in each files");
             invertIndex.createWordToPosIndex(Paths.get(pathToStemmedTexts));
             invertIndex.dumpWordToPosIndex();
         }
 
+        LOGGER.info("creating index; meta and file length");
         invertIndex.createMeta();
         invertIndex.dumpFileLength();
         invertIndex.dumpMeta();
@@ -217,7 +218,7 @@ public class InvertIndex {
             .forEach(file -> {
                 Stream<String> wordInFile = null;
                 try {
-                    wordInFile = Utils.readFile(file);
+                    wordInFile = Utils.readWordsFromFile(file);
                 } catch (IOException e) {
                     LOGGER.error(e.getMessage(), e);
                 }

@@ -13,22 +13,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public class FindAddress {
-
     private static final String pathToJsonWithAddress = "../../../address.json";
-
-    private static final String pathToDirWithAddress = "" +
-            "./src/main/resources/address/";
-
+    private static final String pathToDirWithAddress = "./src/main/resources/address/";
     private ConcurrentHashMap<Integer, ConcurrentSkipListSet<String>>
             idDocumentToListAddres = new ConcurrentHashMap<>();
 
+    /**
+     * "address(.+)<br\\s+/>";
+     * "<p>Адрес:\K(.*)(?=</p>)" - dance line
+     * "address\">\K(.*)(?=\<)"
+     */
 
-    //    "address(.+)<br\\s+/>";
-    //    "<p>Адрес:\K(.*)(?=</p>)" - dance line
-    //    "address\">\K(.*)(?=\<)"
-
-
-    public void initIdxDocument() {
+    public void initIdxDocument() throws IOException {
         Utils.loadArrayWithNameFiles();
         Utils.getNameDocumentToIndex().forEach((nameDoc, idx) ->
                 idDocumentToListAddres.put(idx, new ConcurrentSkipListSet<>()));
@@ -75,7 +71,7 @@ public class FindAddress {
                 });
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         FindAddress findAddress = new FindAddress();
         findAddress.initIdxDocument();
         findAddress.readAllFilesWithAddress();

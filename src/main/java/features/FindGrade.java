@@ -43,7 +43,7 @@ class FindGrade {
 
 
 
-    void saveGrade() {
+    void saveGrade() throws IOException {
         features.utils.Utils.loadArrayWithNameFiles();
         nameDocumentToIndex = features.utils.Utils.getNameDocumentToIndex();
         loadAllGrade();
@@ -58,10 +58,6 @@ class FindGrade {
             e.printStackTrace();
         }
     }
-
-
-
-
 
     private void loadAllGrade() {
         try {
