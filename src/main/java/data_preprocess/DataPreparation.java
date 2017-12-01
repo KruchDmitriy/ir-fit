@@ -44,6 +44,6 @@ public class DataPreparation {
         }
 
         LOGGER.info("Creating index");
-        InvertIndex.create(Utils.PATH_TO_STEMMED_TEXTS, false);
+        InvertIndex.create(Utils.PATH_TO_STEMMED_TEXTS, true);
     }
 }

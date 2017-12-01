@@ -15,16 +15,22 @@ public class Search {
     private final BM25 bm25;
     private final FindAddress address;
 
+    public Search() {
+        try {
+            System.out.println("start load search");
+            invertIndex = InvertIndex.readFromDirectory();
 
-    public Search() throws IOException {
-        invertIndex = InvertIndex.readFromDirectory();
-        InvertIndex.Meta meta = invertIndex.getMeta();
-        bm25 = new BM25(meta.numberOfDocuments, meta.averageDocumentLength);
-        address = new FindAddress();
-        address.loadAddressFromJson();
+            InvertIndex.Meta meta = invertIndex.getMeta();
+            bm25 = new BM25(meta.numberOfDocuments, meta.averageDocumentLength);
+            address = new FindAddress();
+            address.loadAddressFromJson();
 
-        LoadUrls.loadJsonFileWithIdxToUrlOriginAddress();
-        GenerateStartForDocument.loadFromJsonCountStars();
+            LoadUrls.loadJsonFileWithIdxToUrlOriginAddress();
+            GenerateStartForDocument.loadFromJsonCountStars();
+            System.out.println("stop load search");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public List<Document> process(@NotNull String query) {

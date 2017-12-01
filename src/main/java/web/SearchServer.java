@@ -22,7 +22,6 @@ public class SearchServer {
 
         server.start();
         System.out.println("Started!");
-        server.dump(System.err);
         server.join();
     }
 }

@@ -5,7 +5,7 @@ function searchToggle(obj, evt){
         container.addClass('active');
         evt.preventDefault();
     }
-    else if(container.hasClass('active') && $(obj).closest('.input-holder').length == 0){
+    else if(container.hasClass('active') && $(obj).closest('.input-holder').length === 0){
         container.removeClass('active');
         // clear input
         container.find('.search-input').val('');
@@ -14,10 +14,22 @@ function searchToggle(obj, evt){
     }
 }
 
-function submitFn(obj, evt){
-    value = $(obj).find('.search-input').val().trim();
+function submitFn(obj, event){
+    const value = $(obj).find('.search-input').val().trim();
 
-    _html = "Yup yup! Your search text sounds like this: ";
+    $.ajax({
+        type: "POST",
+        url: "/search",
+        contentType: "application/json;charset=UTF-8",
+        data: JSON.stringify({
+            'query': value
+        }),
+        dataType: "json"
+    }).done(function (response) {
+        console.log(response);
+    });
+
+    var _html = "Yup yup! Your search text sounds like this: ";
     if(!value.length){
         _html = "Yup yup! Add some text friend :D";
     }
@@ -28,5 +40,5 @@ function submitFn(obj, evt){
     $(obj).find('.result-container').html('<span>' + _html + '</span>');
     $(obj).find('.result-container').fadeIn(100);
 
-    evt.preventDefault();
+    event.preventDefault();
 }
