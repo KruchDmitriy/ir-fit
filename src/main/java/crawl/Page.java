@@ -35,7 +35,7 @@ public class Page {
     private String text;
     private boolean isValidUploaded = false;
 
-    Page(URL url, URL baseUrl) throws URISyntaxException {
+    public Page(URL url, URL baseUrl) throws URISyntaxException {
         this.url = url;
         this.parentUrl = baseUrl;
         this.uri = url.toURI();
@@ -134,7 +134,7 @@ public class Page {
     }
 
     @Override
-    public int hashCode() {
+    public int hashCode()  {
         return url.toString().hashCode();
     }
 

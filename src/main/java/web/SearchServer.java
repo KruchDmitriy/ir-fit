@@ -17,7 +17,7 @@ public class SearchServer {
 
         context.addServlet(DefaultServlet.class, "/");
         context.addServlet(HomeServlet.class, "/home");
-        context.addServlet(SearchServlet.class, "/search");
+        context.addServlet(SearchServlet    .class, "/search");
         server.setHandler(context);
 
         server.start();
