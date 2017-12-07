@@ -12,7 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class GenerateStartForDocument {
+public class GenerateStarsForDocument {
 
     private static final String pathGradeJson =
             "./src/main/resources/gradeFind.json";
@@ -99,16 +99,16 @@ public class GenerateStartForDocument {
     }
 
 //    public static void main(String[] args) {
-//        GenerateStartForDocument.loadGradeFromJson();
-//        GenerateStartForDocument.calculateStarsForAllDocument();
-//        GenerateStartForDocument.saveCountStart();
+//        GenerateStarsForDocument.loadGradeFromJson();
+//        GenerateStarsForDocument.calculateStarsForAllDocument();
+//        GenerateStarsForDocument.saveCountStart();
 
     public static void main(String[] args) {
-        GenerateStartForDocument.loadGradeFromJson();
-        GenerateStartForDocument.calculateStarsForAllDocument();
-        GenerateStartForDocument.saveCountStart();
+        GenerateStarsForDocument.loadGradeFromJson();
+        GenerateStarsForDocument.calculateStarsForAllDocument();
+        GenerateStarsForDocument.saveCountStart();
 //        try {
-//            GenerateStartForDocument.loadFromJsonCountStars();
+//            GenerateStarsForDocument.loadFromJsonCountStars();
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }

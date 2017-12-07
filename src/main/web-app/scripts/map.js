@@ -3,20 +3,23 @@ ymaps.ready(init);
 var map;
 
 function init() {
-
     map = new ymaps.Map("map", {
                     center: [0, 0],
                     zoom: 9
-
                 });
-//    setAddress(['Нижний Новгород ул Голубева д3',
+//    drawAdresses(['Нижний Новгород ул Голубева д3',
 //                'Нижний Новгород ул Голубева д3/2',
 //                'Нижний Новгород ул Голубева д7'])
-
 }
 
-function setAddress(arrAddress) {
+function drawAdresses(arrAddress) {
     arrAddress.forEach(addr => drawLocation(addr));
+}
+
+function removeObjectsFromMap() {
+    if (map != undefined) {
+        map.geoObjects.removeAll();
+    }
 }
 
 function drawLocation(address) {
