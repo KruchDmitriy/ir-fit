@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Search {
+    private final static double lambdaStars = 0.2;
     private final InvertIndex invertIndex;
     private final BM25 bm25;
     private final FindAddress address;
@@ -29,7 +30,7 @@ public class Search {
             address.loadAddressFromJson();
 
             LoadUrls.loadJsonFileWithIdxToUrlOriginAddress();
-            GenerateStartForDocument.loadFromJsonCountStars();
+            GenerateStarsForDocument.loadFromJsonCountStars();
             System.out.println("stop load search");
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -55,6 +56,8 @@ public class Search {
                 scores[finalI] += bm25.score(termFrequency, documentLength,
                         queryFrequency, documents.size());
             });
+
+            scores[i] += lambdaStars * GenerateStarsForDocument.getStarsById(finalDocId);
         }
 
         final SortedMap<Double, Integer> ranging = new TreeMap<>((o1, o2) -> -Double.compare(o1, o2));
@@ -62,19 +65,16 @@ public class Search {
             ranging.put(scores[i], documents.get(i));
         }
 
-        System.out.println("min " + ranging.firstKey());
-        System.out.println("max " + ranging.lastKey());
-
         return ranging.values().stream()
-                .map(idx -> {
-                    String url = LoadUrls.getUrlById(idx);
+                .map(documentId -> {
+                    String url = LoadUrls.getUrlById(documentId);
                     if (url == null) {
-                        url = invertIndex.documentById(idx).replaceAll("_", "/");
+                        url = invertIndex.documentById(documentId).replaceAll("_", "/");
                     }
                     String text = "";
                     try {
                         text = Files
-                                .lines(Paths.get(Utils.PATH_TO_TEXTS+ invertIndex.documentById(idx)))
+                                .lines(Paths.get(Utils.PATH_TO_TEXTS+ invertIndex.documentById(documentId)))
                                 .flatMap(Pattern.compile("\\s+")::splitAsStream).limit(100)
                                 .collect(Collectors.joining(" "));
                     } catch (IOException e) {
@@ -82,8 +82,8 @@ public class Search {
                     }
                     return new Document(
                             url,
-                            GenerateStartForDocument.getStarsById(idx),
-                            address.getListByIdDoc(idx),
+                            GenerateStarsForDocument.getStarsById(documentId),
+                            address.getListByIdDoc(documentId),
                             text);
                 })
                 .collect(Collectors.toList());
