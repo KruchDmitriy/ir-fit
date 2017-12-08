@@ -7,24 +7,50 @@ $.fn.extend({
     }
 });
 
-function setUrlTitle(url, element) {
-    $.ajax({
-        url: url
-    }).done(function(data) {
-        var matches = data.match(/<title>(.*?)<\/title>/);
-        element.innerHTML = matches[0];
-    });
+//<!--<div class="container">-->
+//    <!--<div class="row" style="margin:10px;">-->
+//        <!--<div class="panel panel-primary panel-body">-->
+//            <!--<div class="pull-left">-->
+//                <!--<span  >-->
+//                    <!--<i class="glyphicon glyphicon-star" style="color:gold"></i>-->
+//                <!--</span>-->
+//                <!---->
+//            <!--</div>-->
+//        <!--</div>-->
+//    <!--</div>-->
+//<!--</div>-->
+
+function getStartCount(countGold) {
+    var countStars = 5;
+    var stars = '<span>';
+    for (i = 0; i < countGold; i++) {
+        stars += '<i class="glyphicon glyphicon-star" style="color:gold">';
+    }
+    for (i = countGold; i < countStars; i++) {
+        stars += '<i class="glyphicon glyphicon-star" style="color:white">';
+    }
+    stars += '</span>';
 }
 
 function processDocument(doc, id) {
     $(".search-output").show();
     $(".results-for").show();
     nothing = true;
-//    var docTitle = '<h3 id="doc' + id + '"><a href="' + doc.url + '" class="doc-title" target="_blank"></a></h3>';
+    var containerTitle =  '<div class="container">';
+
+
+
+    var docTitle = '<h3 id="doc' + id + '"><a href="' + doc.url + '" class="doc-title" target="_blank"></a></h3>';
+
+    containerTitle += docTitle;
+    containerTitle += getStartCount(doc.starsCount);
+
     var docLink = '<h4><a href="' + doc.url + '" target="_blank" class="doc-link">' + doc.url + '</a></h4>';
     var docDesc = '<p class="doc-desc">' + doc.text + '</p>';
-    var searchResults = docLink + docDesc;
-    $(".search-output").prepend(searchResults + '<hr>');
+
+
+    var searchResults = containerTitle + docLink + docDesc;
+    $(".search-output").prepend(searchResults + '</div>'  /*+ '<hr>'*/);
     $(".nothing").hide();
     drawAdresses(doc.addresses);
 //    setUrlTitle(doc.url, $("#doc"+id)[0]);
