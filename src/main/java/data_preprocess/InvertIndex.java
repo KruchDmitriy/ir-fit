@@ -3,6 +3,7 @@ package data_preprocess;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonWriter;
 import data_preprocess.utils.Utils;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -40,6 +41,7 @@ public class InvertIndex {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type LIST_FILES_TYPE = new TypeToken<List<String>>() {}.getType();
+    private static final Type LIST_INT_TYPE = new TypeToken<List<Integer>>() {}.getType();
     private static final Type FILES_LENGTH_TYPE = new TypeToken<Map<Integer, Integer>>() {}.getType();
     private static final Type WORD_TO_FREQ_FILE_TYPE = new TypeToken<SortedMap<String, LookUpTableFreq>>() {}.getType();
 
@@ -61,8 +63,7 @@ public class InvertIndex {
 
         if (createPositionIndex) {
             LOGGER.info("creating index; word to position in each files");
-            invertIndex.createWordToPosIndex(Paths.get(pathToStemmedTexts));
-            invertIndex.dumpWordToPosIndex();
+            invertIndex.createAndDumpWordToPosIndex(Paths.get(pathToStemmedTexts));
         }
 
         LOGGER.info("creating index; meta and file length");
@@ -174,27 +175,67 @@ public class InvertIndex {
         }
     }
 
-    private void createWordToPosIndex(Path pathToStemmedTexts) throws IOException {
+    private void createAndDumpWordToPosIndex(Path pathToStemmedTexts) throws IOException {
         List<Path> allFiles = Utils.getAllFiles(pathToStemmedTexts);
-        List<Integer> listPosition;
-        for (Path path: allFiles) {
-            try {
-                String content = new String(Files.readAllBytes(path));
-                for (String word : wordToPosInFile.keySet()) {
-                    listPosition = findStartIndexesForKeyword(word, content);
-                        wordToPosInFile.get(word).addListPositionInFile(
-                                fileIndex.get(path.getFileName().toString()), listPosition);
-                }
+        String[] fileContent = new String[allFiles.size()];
 
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        for (Path path : allFiles) {
+            final int fileId = fileIndex.get(path.getFileName().toString());
+            fileContent[fileId] = new String(Files.readAllBytes(path));
         }
+
+        final JsonWriter writer = new JsonWriter(new OutputStreamWriter(
+                new FileOutputStream(PATH_INDEX_FILE_POSITIONS), "UTF-8"));
+//        writer.setIndent("  ");
+
+//        PATH_INDEX_FILE_POSITIONS
+
+        wordToPosInFile.keySet().stream()
+                .forEach(word -> {
+                    LOGGER.info("Processing word " + word);
+                    final String regex = "\\b" + word + "\\b";
+                    final Pattern pattern = Pattern.compile(regex);
+
+                    try {
+                        writer.beginObject();
+                        writer.name(word);
+                        writer.beginArray();
+
+                        for (Integer fileId: wordToFreqFile.get(word).getAllFiles()) {
+                            final List<Integer> listPosition = findStartIndexesForKeyword(fileContent[fileId], pattern);
+                            GSON.toJson(listPosition, LIST_INT_TYPE, writer);
+                            wordToPosInFile.get(word).addListPositionInFile(fileId, listPosition);
+                        }
+
+                        writer.endArray();
+                        writer.endObject();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                );
+//        for (String word: wordToPosInFile.keySet()) {
+//
+//        }
+
+//        for (Path path: allFiles) {
+
+//            try {
+//                String content = new String(Files.readAllBytes(path));
+//                for (String word : wordToPosInFile.keySet()) {
+//                    listPosition = findStartIndexesForKeyword(word, content);
+//                        wordToPosInFile.get(word).addListPositionInFile(
+//                                fileIndex.get(path.getFileName().toString()), listPosition);
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+        writer.endArray();
+        writer.close();
     }
 
-    private static List<Integer> findStartIndexesForKeyword(String keyword, String searchString) {
-        String regex = "\\b" + keyword + "\\b";
-        Pattern pattern = Pattern.compile(regex);
+    private static List<Integer> findStartIndexesForKeyword(String searchString, Pattern pattern) {
         Matcher matcher = pattern.matcher(searchString);
 
         List<Integer> wrappers = new ArrayList<>();
@@ -244,6 +285,8 @@ public class InvertIndex {
                 );
             }
         );
+
+        listFiles.sort(Comparator.naturalOrder());
     }
 
     private void createMeta() {
@@ -285,12 +328,6 @@ public class InvertIndex {
             } );
         } catch (IOException e) {
             e.printStackTrace();
-        }
-    }
-
-    private void dumpWordToPosIndex() throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(PATH_INDEX_FILE_POSITIONS))) {
-            GSON.toJson(wordToPosInFile, writer);
         }
     }
 }
