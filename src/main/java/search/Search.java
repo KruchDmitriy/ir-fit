@@ -1,12 +1,19 @@
 package search;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import data_preprocess.InvertIndex;
 import data_preprocess.Stemming;
 import data_preprocess.utils.Utils;
 import features.FindAddress;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -19,6 +26,8 @@ public class Search {
     private final InvertIndex invertIndex;
     private final BM25 bm25;
     private final FindAddress address;
+    private final Map<Integer,String> title;
+
 
     public Search() {
         try {
@@ -26,6 +35,7 @@ public class Search {
             invertIndex = InvertIndex.readFromDirectory();
 
             InvertIndex.Meta meta = invertIndex.getMeta();
+            title = invertIndex.getTitle();
             bm25 = new BM25(meta.numberOfDocuments, meta.averageDocumentLength);
             address = new FindAddress();
             address.loadAddressFromJson();
@@ -72,13 +82,13 @@ public class Search {
                     if (url == null) {
                         url = invertIndex.documentById(documentId).replaceAll("_", "/");
                     }
-                     String text = makeSnippet(documentId,
-                             Stemming.processWords(Utils.splitToWords(query)));
+                    String text = makeSnippet(documentId,
+                            Stemming.processWords(Utils.splitToWords(query)));
                     return new Document(
                             url,
                             GenerateStarsForDocument.getStarsById(documentId),
                             address.getListByIdDoc(documentId),
-                            text);
+                            text, title.get(documentId));
                 }).limit(10)
                 .collect(Collectors.toList());
     }
@@ -91,14 +101,14 @@ public class Search {
                     .flatMap(Pattern.compile("\\s+")::splitAsStream)
                     .collect(Collectors.joining(" "));
             word.forEach(currentWord -> {
-                        int idWord = fullText.indexOf(currentWord);
-                        text.add(fullText.substring(Math.max(0, idWord - 50),
-                                Math.min(idWord + 50, fullText.length()))
-                                .replaceAll(currentWord,
-                                        "<strong>" + currentWord +
-                                                "</strong>"));
+                int idWord = fullText.indexOf(currentWord);
+                text.add(fullText.substring(Math.max(0, idWord - 50),
+                        Math.min(idWord + 50, fullText.length()))
+                        .replaceAll(currentWord,
+                                "<strong>" + currentWord +
+                                        "</strong>"));
 
-                    });
+            });
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }

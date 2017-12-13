@@ -11,12 +11,14 @@ public class Document {
     public final Double starsCount;
     public final ConcurrentSkipListSet<String> addresses;
     public final String text ;
+    public final String title;
 
-    public Document(String url, Double starsCount, ConcurrentSkipListSet<String> addresses, String text) {
+    public Document(String url, Double starsCount, ConcurrentSkipListSet<String> addresses, String text, String title) {
         this.url = url;
         this.starsCount = starsCount;
         this.addresses = addresses;
         this.text = text;
+        this.title = title;
     }
 
     @Override

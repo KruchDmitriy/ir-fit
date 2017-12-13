@@ -32,12 +32,15 @@ public class InvertIndex {
     private static final String FILE_LENGTH_INDEX_NAME = "len_files.json";
     private static final String FILE_POSITIONS_INDEX_NAME = "index_file_pos.json";
     private static final String META_INDEX_NAME = "meta.json";
+    private static final String TITLE_INDEX_NAME = "title.json";
 
     private static final String PATH_INDEX_FILES = IR_FIT_DATA_INDEX + FILE_INDEX_NAME;
     private static final String PATH_INDEX_FREQS = IR_FIT_DATA_INDEX + WORD_FREQ_INDEX_NAME;
     private static final String PATH_INDEX_FILE_LENGTH = IR_FIT_DATA_INDEX + FILE_LENGTH_INDEX_NAME;
     private static final String PATH_INDEX_FILE_POSITIONS = IR_FIT_DATA_INDEX + FILE_POSITIONS_INDEX_NAME;
     private static final String PATH_INDEX_META = IR_FIT_DATA_INDEX + META_INDEX_NAME;
+    private static final String PATH_TITLE = IR_FIT_DATA_INDEX +
+            TITLE_INDEX_NAME ;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type LIST_FILES_TYPE = new TypeToken<List<String>>() {}.getType();
@@ -45,11 +48,16 @@ public class InvertIndex {
     private static final Type FILES_LENGTH_TYPE = new TypeToken<Map<Integer, Integer>>() {}.getType();
     private static final Type WORD_TO_FREQ_FILE_TYPE = new TypeToken<SortedMap<String, LookUpTableFreq>>() {}.getType();
 
+    private static final Type TITLE_TYPE = new TypeToken<Map<Integer, String>>
+            () { }.getType();
+
     private Map<String, Integer> fileIndex = new ConcurrentHashMap<>();
     private List<String> listFiles = Collections.synchronizedList(new ArrayList<>());
     private Map<Integer, Integer> fileLength = new ConcurrentHashMap<>();
     private SortedMap<String, LookUpTable> wordToPosInFile = Collections.synchronizedSortedMap(new TreeMap<>());
     private SortedMap<String, LookUpTableFreq> wordToFreqFile = Collections.synchronizedSortedMap(new TreeMap<>());
+
+    private static Map<Integer, String> title = new HashMap<>();
     private Meta meta;
 
     public static InvertIndex create(String pathToStemmedTexts, boolean createPositionIndex) throws IOException {
@@ -74,6 +82,18 @@ public class InvertIndex {
         return invertIndex;
     }
 
+    private static void readTitle() throws IOException {
+
+        try (Reader reader = new BufferedReader(new FileReader(PATH_TITLE))) {
+            title = GSON.fromJson(reader, TITLE_TYPE);
+        }
+    }
+
+    public Map<Integer, String> getTitle( ) {
+        return title;
+    }
+
+
     public static InvertIndex readFromDirectory() throws IOException {
         return readFromDirectory(null);
     }
@@ -95,6 +115,7 @@ public class InvertIndex {
         invertIndex.fileLength = readFileLengthIndex(indexDirectory + FILE_LENGTH_INDEX_NAME);
         invertIndex.meta = readMeta(indexDirectory + META_INDEX_NAME);
 
+        readTitle();
         return invertIndex;
     }
 
