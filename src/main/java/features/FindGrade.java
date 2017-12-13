@@ -115,13 +115,14 @@ public class FindGrade {
     }
 
     private void initCompilePattern() {
-        readingGradeByLine.forEach(grade ->
+        readingGradeByLine.parallelStream().forEach(grade ->
                 compilePattern.put(grade, Pattern.compile(grade))
         );
     }
 
     private void initMapWithGrade() {
-        readingGradeByLine.forEach(grade -> gradeNameToMapFromIdxDocToFreqGrade.put(grade,
+        readingGradeByLine.parallelStream().forEach(grade ->
+                gradeNameToMapFromIdxDocToFreqGrade.put(grade,
                 new ConcurrentHashMap<>()));
     }
 

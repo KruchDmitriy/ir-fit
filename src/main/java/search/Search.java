@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Search {
     private final static double lambdaStars = 0.2;
@@ -71,22 +72,37 @@ public class Search {
                     if (url == null) {
                         url = invertIndex.documentById(documentId).replaceAll("_", "/");
                     }
-                    String text = "";
-                    try {
-                        text = Files
-                                .lines(Paths.get(Utils.PATH_TO_TEXTS+ invertIndex.documentById(documentId)))
-                                .flatMap(Pattern.compile("\\s+")::splitAsStream).limit(100)
-                                .collect(Collectors.joining(" "));
-                    } catch (IOException e) {
-                        System.out.println(e.getMessage());
-                    }
+                     String text = makeSnippet(documentId,
+                             Stemming.processWords(Utils.splitToWords(query)));
                     return new Document(
                             url,
                             GenerateStarsForDocument.getStarsById(documentId),
                             address.getListByIdDoc(documentId),
                             text);
-                })
+                }).limit(10)
                 .collect(Collectors.toList());
+    }
+
+    private String makeSnippet(Integer documentId, Stream<String> word) {
+        List<String> text = new LinkedList<>();
+        try {
+            String fullText = Files
+                    .lines(Paths.get(Utils.PATH_TO_TEXTS + invertIndex.documentById(documentId)))
+                    .flatMap(Pattern.compile("\\s+")::splitAsStream)
+                    .collect(Collectors.joining(" "));
+            word.forEach(currentWord -> {
+                        int idWord = fullText.indexOf(currentWord);
+                        text.add(fullText.substring(Math.max(0, idWord - 50),
+                                Math.min(idWord + 50, fullText.length()))
+                                .replaceAll(currentWord,
+                                        "<strong>" + currentWord +
+                                                "</strong>"));
+
+                    });
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+        return text.stream().collect(Collectors.joining(" "));
     }
 
     public static void main(String[] args) throws IOException {
