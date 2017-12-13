@@ -7,11 +7,11 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 public class Document {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    public final String url;
-    public final Double starsCount;
-    public final ConcurrentSkipListSet<String> addresses;
-    public final String text ;
-    public final String title;
+    private final String url;
+    private final Double starsCount;
+    private final ConcurrentSkipListSet<String> addresses;
+    private final String text ;
+    private final String title;
 
     public Document(String url, Double starsCount, ConcurrentSkipListSet<String> addresses, String text, String title) {
         this.url = url;

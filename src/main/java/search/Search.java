@@ -1,19 +1,12 @@
 package search;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import data_preprocess.InvertIndex;
 import data_preprocess.Stemming;
 import data_preprocess.utils.Utils;
 import features.FindAddress;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
-import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -26,7 +19,7 @@ public class Search {
     private final InvertIndex invertIndex;
     private final BM25 bm25;
     private final FindAddress address;
-    private final Map<Integer,String> title;
+    private final Map<Integer, String> title;
 
 
     public Search() {
@@ -80,7 +73,8 @@ public class Search {
                 .map(documentId -> {
                     String url = LoadUrls.getUrlById(documentId);
                     if (url == null) {
-                        url = invertIndex.documentById(documentId).replaceAll("_", "/");
+                        url = invertIndex.documentById(documentId)
+                                .replaceAll("_", "/");
                     }
                     String text = makeSnippet(documentId,
                             Stemming.processWords(Utils.splitToWords(query)));
@@ -97,9 +91,11 @@ public class Search {
         List<String> text = new LinkedList<>();
         try {
             String fullText = Files
-                    .lines(Paths.get(Utils.PATH_TO_TEXTS + invertIndex.documentById(documentId)))
+                    .lines(Paths.get(
+                            Utils.PATH_TO_TEXTS + invertIndex.documentById(documentId)))
                     .flatMap(Pattern.compile("\\s+")::splitAsStream)
                     .collect(Collectors.joining(" "));
+
             word.forEach(currentWord -> {
                 int idWord = fullText.indexOf(currentWord);
                 text.add(fullText.substring(Math.max(0, idWord - 50),
